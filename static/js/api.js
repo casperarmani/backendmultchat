@@ -94,37 +94,26 @@ const api = {
     },
 
     async sendMessage(message, videos = [], conversationId = null) {
-        const requestKey = `sendMessage_${conversationId}`;
-        this._cancelPreviousRequest(requestKey);
-
-        const controller = new AbortController();
-        this._activeRequests.set(requestKey, controller);
-
-        try {
-            const formData = new FormData();
-            formData.append('message', message);
-            if (conversationId) {
-                formData.append('conversation_id', conversationId);
-            }
-            
-            videos.forEach(video => {
-                formData.append('videos', video);
-            });
-
-            const response = await fetch('/send_message', {
-                method: 'POST',
-                body: formData,
-                signal: controller.signal
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to send message');
-            }
-
-            return response.json();
-        } finally {
-            this._activeRequests.delete(requestKey);
+        const formData = new FormData();
+        formData.append('message', message);
+        if (conversationId) {
+            formData.append('conversation_id', conversationId);
         }
+        
+        videos.forEach(video => {
+            formData.append('videos', video);
+        });
+
+        const response = await fetch('/send_message', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send message');
+        }
+
+        return response.json();
     },
 
     async updateConversationTitle(conversationId, title) {

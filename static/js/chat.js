@@ -66,31 +66,18 @@ async function initChat() {
 
             uploadStatus.textContent = videos.length ? 'Uploading...' : '';
 
-            // Optimistic UI update
-            const tempMessage = {
-                message: message,
-                chat_type: 'user',
-                TIMESTAMP: new Date().toISOString()
-            };
-            chatHistory.unshift(tempMessage);
-            renderChatHistory();
-            
+            // Clear inputs immediately
             messageInput.value = '';
             videoUpload.value = '';
-
-            const response = await api.sendMessage(message, videos, currentConversationId);
             
-            // Clear status
+            const response = await api.sendMessage(message, videos, currentConversationId);
             uploadStatus.textContent = '';
-
-            // Delay the reload slightly to prevent race conditions
-            clearTimeout(submitTimeout);
-            submitTimeout = setTimeout(async () => {
-                await loadConversationMessages(currentConversationId);
-                if (videos.length) {
-                    await loadAnalysisHistory();
-                }
-            }, 500);
+            
+            // Immediately load new messages
+            await loadConversationMessages(currentConversationId);
+            if (videos.length) {
+                await loadAnalysisHistory();
+            }
 
         } catch (error) {
             utils.showError('Failed to send message');
