@@ -1,16 +1,34 @@
 // Chat functionality
 let chatHistory = [];
 let analysisHistory = [];
+let conversations = [];
+let currentConversationId = null;
 
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
     const videoUpload = document.getElementById('video-upload');
     const uploadStatus = document.getElementById('upload-status');
+    const chatHistory = document.getElementById('chat-history');
 
-    // Load initial histories
+    // Add conversation container to the chat interface
+    const conversationsContainer = document.createElement('div');
+    conversationsContainer.className = 'conversations-container';
+    conversationsContainer.innerHTML = `
+        <div class="conversations-header">
+            <h3>Conversations</h3>
+            <button id="new-conversation-btn">New Conversation</button>
+        </div>
+        <div id="conversations-list" class="conversations-list"></div>
+    `;
+    chatHistory.parentElement.insertBefore(conversationsContainer, chatHistory);
+
+    // Setup event listeners
+    document.getElementById('new-conversation-btn').addEventListener('click', createNewConversation);
+
+    // Load initial data
     await Promise.all([
-        loadChatHistory(),
+        loadConversations(),
         loadAnalysisHistory()
     ]);
 
@@ -24,22 +42,24 @@ async function initChat() {
             return;
         }
 
+        if (!currentConversationId) {
+            await createNewConversation();
+        }
+
         try {
             messageInput.disabled = true;
             uploadStatus.textContent = videos.length ? 'Uploading...' : '';
 
-            const response = await api.sendMessage(message, videos);
+            const response = await api.sendMessage(message, videos, currentConversationId);
             
             // Clear inputs
             messageInput.value = '';
             videoUpload.value = '';
             uploadStatus.textContent = '';
 
-            // Reload histories
-            await Promise.all([
-                loadChatHistory(),
-                loadAnalysisHistory()
-            ]);
+            // Reload conversation messages
+            await loadConversationMessages(currentConversationId);
+            await loadAnalysisHistory();
         } catch (error) {
             utils.showError('Failed to send message');
         } finally {
@@ -48,14 +68,63 @@ async function initChat() {
     });
 }
 
-async function loadChatHistory() {
+async function createNewConversation() {
     try {
-        const response = await api.getChatHistory();
-        chatHistory = response.history || [];
+        const title = `Conversation ${new Date().toLocaleString()}`;
+        const response = await api.createConversation(title);
+        await loadConversations();
+        switchConversation(response.conversation.id);
+    } catch (error) {
+        utils.showError('Failed to create conversation');
+    }
+}
+
+async function loadConversations() {
+    try {
+        const response = await api.getConversations();
+        conversations = response.conversations || [];
+        renderConversations();
+    } catch (error) {
+        console.error('Failed to load conversations:', error);
+    }
+}
+
+async function loadConversationMessages(conversationId) {
+    try {
+        if (!conversationId) return;
+        const response = await api.getConversationMessages(conversationId);
+        chatHistory = response.messages || [];
         renderChatHistory();
     } catch (error) {
-        console.error('Failed to load chat history:', error);
+        console.error('Failed to load conversation messages:', error);
     }
+}
+
+function switchConversation(conversationId) {
+    currentConversationId = conversationId;
+    // Update UI to show active conversation
+    const conversationElements = document.querySelectorAll('.conversation-item');
+    conversationElements.forEach(el => {
+        el.classList.toggle('active', el.dataset.id === conversationId);
+    });
+    loadConversationMessages(conversationId);
+}
+
+function renderConversations() {
+    const conversationsList = document.getElementById('conversations-list');
+    conversationsList.innerHTML = '';
+
+    conversations.forEach(conv => {
+        const convDiv = document.createElement('div');
+        convDiv.className = `conversation-item ${conv.id === currentConversationId ? 'active' : ''}`;
+        convDiv.dataset.id = conv.id;
+        convDiv.innerHTML = `
+            <span class="conversation-title">${utils.sanitizeHTML(conv.title)}</span>
+            <span class="conversation-date">${utils.formatDate(conv.created_at)}</span>
+        `;
+        convDiv.addEventListener('click', () => switchConversation(conv.id));
+        conversationsList.appendChild(convDiv);
+    });
 }
 
 async function loadAnalysisHistory() {
@@ -72,33 +141,15 @@ function renderChatHistory() {
     const chatContainer = document.getElementById('chat-history');
     chatContainer.innerHTML = '';
 
-    // Sort messages in reverse chronological order
+    // Sort messages by timestamp
     const sortedMessages = [...chatHistory].sort((a, b) => {
-        return new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP);
+        return new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP);
     });
 
     sortedMessages.forEach(message => {
-        // Log raw message object to inspect structure
-        console.log('Raw message object:', message);
-        
-        // Log timestamp-specific information
-        console.log('Timestamp details:', {
-            rawTimestamp: message.TIMESTAMP,
-            timestampType: typeof message.TIMESTAMP,
-            isISOString: typeof message.TIMESTAMP === 'string' && !isNaN(Date.parse(message.TIMESTAMP)),
-            parsedDate: new Date(message.TIMESTAMP),
-            messageType: message.chat_type
-        });
-        
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.chat_type}`;
         const formattedDate = utils.formatDate(message.TIMESTAMP);
-        
-        // Log formatted date result
-        console.log('Formatted date result:', {
-            originalTimestamp: message.TIMESTAMP,
-            formattedResult: formattedDate
-        });
         
         messageDiv.innerHTML = `
             <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
@@ -106,6 +157,9 @@ function renderChatHistory() {
         `;
         chatContainer.appendChild(messageDiv);
     });
+    
+    // Scroll to bottom
+    chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
 function renderAnalysisHistory() {

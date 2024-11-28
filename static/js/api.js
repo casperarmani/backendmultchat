@@ -53,9 +53,41 @@ const api = {
         return response.ok;
     },
 
-    async sendMessage(message, videos = []) {
+    async createConversation(title) {
+        const formData = new FormData();
+        formData.append('title', title);
+        const response = await fetch('/conversations', {
+            method: 'POST',
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error('Failed to create conversation');
+        }
+        return response.json();
+    },
+
+    async getConversations() {
+        const response = await fetch('/conversations');
+        if (!response.ok) {
+            throw new Error('Failed to fetch conversations');
+        }
+        return response.json();
+    },
+
+    async getConversationMessages(conversationId) {
+        const response = await fetch(`/conversations/${conversationId}/messages`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch conversation messages');
+        }
+        return response.json();
+    },
+
+    async sendMessage(message, videos = [], conversationId = null) {
         const formData = new FormData();
         formData.append('message', message);
+        if (conversationId) {
+            formData.append('conversation_id', conversationId);
+        }
         
         videos.forEach(video => {
             formData.append('videos', video);
@@ -70,6 +102,19 @@ const api = {
             throw new Error('Failed to send message');
         }
 
+        return response.json();
+    },
+
+    async updateConversationTitle(conversationId, title) {
+        const formData = new FormData();
+        formData.append('title', title);
+        const response = await fetch(`/conversations/${conversationId}`, {
+            method: 'PUT',
+            body: formData
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update conversation title');
+        }
         return response.json();
     },
 
