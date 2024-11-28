@@ -37,9 +37,16 @@ async function initChat() {
         // Continue execution even if initial load fails
     }
 
+    let isSubmitting = false;
+    let submitTimeout;
+
     chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        if (isSubmitting) {
+            return; // Prevent double submission
+        }
+
         const message = messageInput.value.trim();
         const videos = Array.from(videoUpload.files);
         
@@ -47,28 +54,51 @@ async function initChat() {
             return;
         }
 
-        if (!currentConversationId) {
-            await createNewConversation();
-        }
-
         try {
+            isSubmitting = true;
             messageInput.disabled = true;
+            const submitButton = chatForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            
+            if (!currentConversationId) {
+                await createNewConversation();
+            }
+
             uploadStatus.textContent = videos.length ? 'Uploading...' : '';
+
+            // Optimistic UI update
+            const tempMessage = {
+                message: message,
+                chat_type: 'user',
+                TIMESTAMP: new Date().toISOString()
+            };
+            chatHistory.unshift(tempMessage);
+            renderChatHistory();
+            
+            messageInput.value = '';
+            videoUpload.value = '';
 
             const response = await api.sendMessage(message, videos, currentConversationId);
             
-            // Clear inputs
-            messageInput.value = '';
-            videoUpload.value = '';
+            // Clear status
             uploadStatus.textContent = '';
 
-            // Reload conversation messages
-            await loadConversationMessages(currentConversationId);
-            await loadAnalysisHistory();
+            // Delay the reload slightly to prevent race conditions
+            clearTimeout(submitTimeout);
+            submitTimeout = setTimeout(async () => {
+                await loadConversationMessages(currentConversationId);
+                if (videos.length) {
+                    await loadAnalysisHistory();
+                }
+            }, 500);
+
         } catch (error) {
             utils.showError('Failed to send message');
         } finally {
+            isSubmitting = false;
             messageInput.disabled = false;
+            const submitButton = chatForm.querySelector('button[type="submit"]');
+            submitButton.disabled = false;
         }
     });
 }
