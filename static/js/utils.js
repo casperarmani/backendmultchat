@@ -3,7 +3,12 @@ const utils = {
     formatDate(timestamp) {
         try {
             if (!timestamp) return '';
-            const date = new Date(timestamp);
+            // Try parsing as ISO string first
+            let date = new Date(timestamp);
+            // If invalid, try Unix timestamp
+            if (isNaN(date.getTime()) && typeof timestamp === 'number') {
+                date = new Date(timestamp * 1000);
+            }
             // Check if date is valid
             if (isNaN(date.getTime())) {
                 console.error('Invalid date:', timestamp);

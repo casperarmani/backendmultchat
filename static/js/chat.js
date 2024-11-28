@@ -78,15 +78,27 @@ function renderChatHistory() {
     });
 
     sortedMessages.forEach(message => {
-        console.log('Processing message:', {
-            timestamp: message.timestamp,
-            formattedDate: utils.formatDate(message.timestamp),
-            type: message.chat_type
+        // Log raw message object to inspect structure
+        console.log('Raw message object:', message);
+        
+        // Log timestamp-specific information
+        console.log('Timestamp details:', {
+            rawTimestamp: message.timestamp,
+            timestampType: typeof message.timestamp,
+            isISOString: typeof message.timestamp === 'string' && !isNaN(Date.parse(message.timestamp)),
+            parsedDate: new Date(message.timestamp),
+            messageType: message.chat_type
         });
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.chat_type}`;
         const formattedDate = utils.formatDate(message.timestamp);
+        
+        // Log formatted date result
+        console.log('Formatted date result:', {
+            originalTimestamp: message.timestamp,
+            formattedResult: formattedDate
+        });
         
         messageDiv.innerHTML = `
             <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
