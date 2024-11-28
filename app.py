@@ -421,10 +421,81 @@ async def metrics():
             "timestamp": datetime.utcnow().isoformat()
         }
 
+
+@app.post("/conversations")
+async def create_conversation_endpoint(
+    request: Request,
+    title: str = Form(..., description="Title of the conversation")
+):
+    """Create a new conversation"""
+    user = await get_current_user(request)
+    try:
+        conversation = await create_conversation(uuid.UUID(user['id']), title)
+        return JSONResponse(content={"success": True, "conversation": conversation})
+    except Exception as e:
+        logger.error(f"Error creating conversation: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/conversations")
+async def get_conversations_endpoint(request: Request):
+    """Get all conversations for the current user"""
+    user = await get_current_user(request)
+    try:
+        conversations = await get_user_conversations(uuid.UUID(user['id']))
+        return JSONResponse(content={"conversations": conversations})
+    except Exception as e:
+        logger.error(f"Error getting conversations: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/conversations/{conversation_id}/messages")
+async def get_conversation_messages_endpoint(
+    conversation_id: str,
+    request: Request
+):
+    """Get all messages in a conversation"""
+    user = await get_current_user(request)
+    try:
+        messages = await get_conversation_messages(uuid.UUID(conversation_id))
+        return JSONResponse(content={"messages": messages})
+    except Exception as e:
+        logger.error(f"Error getting conversation messages: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/conversations/{conversation_id}")
+async def update_conversation_endpoint(
+    conversation_id: str,
+    request: Request,
+    title: str = Form(..., description="New title for the conversation")
+):
+    """Update a conversation's title"""
+    await get_current_user(request)  # Verify user is authenticated
+    try:
+        updated = await update_conversation_title(uuid.UUID(conversation_id), title)
+        return JSONResponse(content={"success": True, "conversation": updated})
+    except Exception as e:
+        logger.error(f"Error updating conversation: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation_endpoint(
+    conversation_id: str,
+    request: Request
+):
+    """Delete a conversation"""
+    await get_current_user(request)  # Verify user is authenticated
+    try:
+        success = await delete_conversation(uuid.UUID(conversation_id))
+        if not success:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return JSONResponse(content={"success": True})
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 @app.post("/send_message")
 async def send_message(
     request: Request,
     message: str = Form(...),
+    conversation_id: Optional[str] = Form(None),
     videos: List[UploadFile] = File(None)
 ):
     user = await get_current_user(request)
@@ -474,8 +545,9 @@ async def send_message(
         
         response_text = await chatbot.send_message(message)
         
-        await insert_chat_message(uuid.UUID(user['id']), message, 'user')
-        await insert_chat_message(uuid.UUID(user['id']), response_text, 'bot')
+        conv_id = uuid.UUID(conversation_id) if conversation_id else None
+        await insert_chat_message(uuid.UUID(user['id']), message, 'user', conv_id)
+        await insert_chat_message(uuid.UUID(user['id']), response_text, 'bot', conv_id)
         
         cache_key = f"chat_history:{user['id']}"
         redis_manager.invalidate_cache(cache_key)
