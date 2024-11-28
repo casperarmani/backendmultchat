@@ -12,9 +12,31 @@ if not supabase_url or not supabase_key:
 
 supabase: Client = create_client(supabase_url, supabase_key)
 
-async def create_user(email: str) -> Dict:
-    response = supabase.table("users").insert({"email": email}).execute()
-    return response.data[0] if response.data else {}
+async def create_user(email: str, password: str) -> Dict:
+    try:
+        # Check if user already exists
+        existing_user = await get_user_by_email(email)
+        if existing_user:
+            raise ValueError("User with this email already exists")
+            
+        # Create user with auth
+        auth_response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        
+        if not auth_response.user:
+            raise ValueError("Failed to create user authentication")
+            
+        # Create user record in users table
+        response = supabase.table("users").insert({
+            "id": auth_response.user.id,
+            "email": email
+        }).execute()
+        
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        raise ValueError(f"Error creating user: {str(e)}")
 
 async def get_user_by_email(email: str) -> Dict:
     response = supabase.table("users").select("*").eq("email", email).execute()

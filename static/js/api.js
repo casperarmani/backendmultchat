@@ -28,6 +28,24 @@ const api = {
         return response.json();
     },
 
+    async signup(email, password) {
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('password', password);
+
+        const response = await fetch('/signup', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Signup failed');
+        }
+
+        return response.json();
+    },
+
     async logout() {
         const response = await fetch('/logout', {
             method: 'POST'

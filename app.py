@@ -133,6 +133,59 @@ async def get_current_user(request: Request, return_none=False):
             return None
         raise HTTPException(status_code=401, detail="Authentication error")
 
+@app.post('/signup')
+async def signup(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    try:
+        if not redis_manager.check_rate_limit("signup", request.client.host):
+            raise HTTPException(
+                status_code=429,
+                detail="Too many signup attempts. Please try again later."
+            )
+
+        # Create user
+        user = await create_user(email, password)
+        
+        # Generate session
+        session_id = secrets.token_urlsafe(32)
+        session_data = {
+            "id": str(user.get("id")),
+            "email": email,
+            "last_refresh": time.time()
+        }
+
+        if not redis_manager.set_session(session_id, session_data, SESSION_LIFETIME):
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to create session"
+            )
+
+        response = JSONResponse(content={"success": True, "message": "Signup successful"})
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            httponly=COOKIE_HTTPONLY,
+            secure=COOKIE_SECURE,
+            samesite=COOKIE_SAMESITE,
+            max_age=SESSION_LIFETIME
+        )
+        return response
+
+    except ValueError as e:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": str(e)}
+        )
+    except Exception as e:
+        logger.error(f"Signup error: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Internal server error"}
+        )
+
 @app.post('/login')
 async def login_post(
     request: Request,
