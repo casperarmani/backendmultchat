@@ -72,20 +72,41 @@ async function createNewConversation() {
     try {
         const title = `Conversation ${new Date().toLocaleString()}`;
         const response = await api.createConversation(title);
-        await loadConversations();
-        switchConversation(response.conversation.id);
+        
+        if (response && response.success && response.conversation) {
+            await loadConversations();
+            switchConversation(response.conversation.id);
+            return response.conversation.id;
+        } else {
+            throw new Error('Invalid response from server');
+        }
     } catch (error) {
-        utils.showError('Failed to create conversation');
+        console.error('Failed to create conversation:', error);
+        utils.showError('Failed to create conversation. Please try again.');
+        return null;
     }
 }
 
 async function loadConversations() {
     try {
         const response = await api.getConversations();
-        conversations = response.conversations || [];
-        renderConversations();
+        if (response && response.conversations) {
+            conversations = response.conversations;
+            renderConversations();
+            
+            // If there are conversations but none is selected, select the most recent one
+            if (conversations.length > 0 && !currentConversationId) {
+                switchConversation(conversations[0].id);
+            }
+        } else {
+            conversations = [];
+            renderConversations();
+        }
     } catch (error) {
         console.error('Failed to load conversations:', error);
+        utils.showError('Unable to load conversations. Please refresh the page.');
+        conversations = [];
+        renderConversations();
     }
 }
 

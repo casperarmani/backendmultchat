@@ -430,11 +430,20 @@ async def create_conversation_endpoint(
     """Create a new conversation"""
     user = await get_current_user(request)
     try:
+        if not user or 'id' not in user:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+        
         conversation = await create_conversation(uuid.UUID(user['id']), title)
+        if not conversation:
+            raise HTTPException(status_code=500, detail="Failed to create conversation")
+            
         return JSONResponse(content={"success": True, "conversation": conversation})
+    except ValueError as e:
+        logger.error(f"Validation error creating conversation: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating conversation: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/conversations")
 async def get_conversations_endpoint(request: Request):

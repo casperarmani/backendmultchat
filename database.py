@@ -1,4 +1,6 @@
 import os
+import logging
+logger = logging.getLogger(__name__)
 from supabase.client import create_client, Client
 from typing import List, Dict, Optional
 import uuid
@@ -85,16 +87,24 @@ async def get_video_analysis_history(user_id: uuid.UUID, limit: int = 10) -> Lis
 
 async def create_conversation(user_id: uuid.UUID, title: str = "New Conversation") -> Dict:
     """Create a new conversation for a user"""
-    response = supabase.table("conversations").insert({
-        "user_id": str(user_id),
-        "title": title
-    }).execute()
-    return response.data[0] if response.data else {}
+    try:
+        response = supabase.table("conversations").insert({
+            "user_id": str(user_id),
+            "title": title
+        }).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error creating conversation: {str(e)}")
+        raise ValueError(f"Failed to create conversation: {str(e)}")
 
 async def get_user_conversations(user_id: uuid.UUID, limit: int = 10) -> List[Dict]:
     """Get all conversations for a user"""
-    response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", None).order("updated_at", desc=True).limit(limit).execute()
-    return response.data
+    try:
+        response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", None).order("updated_at", desc=True).limit(limit).execute()
+        return response.data
+    except Exception as e:
+        logger.error(f"Error getting conversations: {str(e)}")
+        return []
 
 async def get_conversation_messages(conversation_id: uuid.UUID, limit: int = 50) -> List[Dict]:
     """Get all messages in a conversation"""
@@ -116,15 +126,4 @@ async def delete_conversation(conversation_id: uuid.UUID) -> bool:
         logger.error(f"Error deleting conversation: {str(e)}")
         return False
 
-async def get_user_conversations(user_id: uuid.UUID, limit: int = 10) -> List[Dict]:
-    """Get all conversations for a user"""
-    response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", None).order("updated_at", desc=True).limit(limit).execute()
-    return response.data
-
-async def create_conversation(user_id: uuid.UUID, title: str = "New Conversation") -> Dict:
-    """Create a new conversation for a user"""
-    response = supabase.table("conversations").insert({
-        "user_id": str(user_id),
-        "title": title
-    }).execute()
-    return response.data[0] if response.data else {}
+# End of file
