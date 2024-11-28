@@ -27,10 +27,15 @@ async function initChat() {
     document.getElementById('new-conversation-btn').addEventListener('click', createNewConversation);
 
     // Load initial data
-    await Promise.all([
-        loadConversations(),
-        loadAnalysisHistory()
-    ]);
+    try {
+        await Promise.all([
+            loadConversations(),
+            loadAnalysisHistory()
+        ]);
+    } catch (error) {
+        console.error('Error loading initial data:', error);
+        // Continue execution even if initial load fails
+    }
 
     chatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -90,21 +95,15 @@ async function createNewConversation() {
 async function loadConversations() {
     try {
         const response = await api.getConversations();
-        if (response && response.conversations) {
-            conversations = response.conversations;
-            renderConversations();
-            
-            // If there are conversations but none is selected, select the most recent one
-            if (conversations.length > 0 && !currentConversationId) {
-                switchConversation(conversations[0].id);
-            }
-        } else {
-            conversations = [];
-            renderConversations();
+        conversations = response?.conversations || [];
+        renderConversations();
+        
+        // If there are conversations but none is selected, select the most recent one
+        if (conversations.length > 0 && !currentConversationId) {
+            switchConversation(conversations[0].id);
         }
     } catch (error) {
         console.error('Failed to load conversations:', error);
-        utils.showError('Unable to load conversations. Please refresh the page.');
         conversations = [];
         renderConversations();
     }
@@ -121,14 +120,25 @@ async function loadConversationMessages(conversationId) {
     }
 }
 
-function switchConversation(conversationId) {
-    currentConversationId = conversationId;
-    // Update UI to show active conversation
-    const conversationElements = document.querySelectorAll('.conversation-item');
-    conversationElements.forEach(el => {
-        el.classList.toggle('active', el.dataset.id === conversationId);
-    });
-    loadConversationMessages(conversationId);
+async function switchConversation(conversationId) {
+    try {
+        currentConversationId = conversationId;
+        // Update UI to show active conversation
+        const conversationElements = document.querySelectorAll('.conversation-item');
+        conversationElements.forEach(el => {
+            el.classList.toggle('active', el.dataset.id === conversationId);
+        });
+        await loadConversationMessages(conversationId);
+        
+        // Clear chat input
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+            messageInput.value = '';
+        }
+    } catch (error) {
+        console.error('Error switching conversation:', error);
+        utils.showError('Failed to switch conversation. Please try again.');
+    }
 }
 
 function renderConversations() {

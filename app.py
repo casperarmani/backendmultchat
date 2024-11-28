@@ -9,8 +9,12 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from chatbot import Chatbot
-from database import create_user, get_user_by_email, insert_chat_message, get_chat_history
-from database import insert_video_analysis, get_video_analysis_history, check_user_exists
+from database import (
+    create_user, get_user_by_email, insert_chat_message, get_chat_history,
+    insert_video_analysis, get_video_analysis_history, check_user_exists,
+    get_user_conversations, create_conversation, get_conversation_messages,
+    update_conversation_title, delete_conversation
+)
 from dotenv import load_dotenv
 import uvicorn
 from supabase.client import create_client, Client

@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 from supabase.client import create_client, Client
 from typing import List, Dict, Optional
@@ -85,42 +86,57 @@ async def get_video_analysis_history(user_id: uuid.UUID, limit: int = 10) -> Lis
     return response.data
 
 
+async def get_user_conversations(user_id: uuid.UUID, limit: int = 10) -> List[Dict]:
+    """Get all conversations for a user"""
+    try:
+        response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", "null").order("created_at", desc=True).limit(limit).execute()
+        return response.data
+    except Exception as e:
+        logger.error(f"Error getting conversations: {str(e)}")
+        return []
+
 async def create_conversation(user_id: uuid.UUID, title: str = "New Conversation") -> Dict:
     """Create a new conversation for a user"""
     try:
         response = supabase.table("conversations").insert({
             "user_id": str(user_id),
-            "title": title
+            "title": title,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }).execute()
         return response.data[0] if response.data else {}
     except Exception as e:
         logger.error(f"Error creating conversation: {str(e)}")
         raise ValueError(f"Failed to create conversation: {str(e)}")
 
-async def get_user_conversations(user_id: uuid.UUID, limit: int = 10) -> List[Dict]:
-    """Get all conversations for a user"""
-    try:
-        response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", None).order("updated_at", desc=True).limit(limit).execute()
-        return response.data
-    except Exception as e:
-        logger.error(f"Error getting conversations: {str(e)}")
-        return []
-
 async def get_conversation_messages(conversation_id: uuid.UUID, limit: int = 50) -> List[Dict]:
     """Get all messages in a conversation"""
-    response = supabase.table("user_chat_history").select("*").eq("conversation_id", str(conversation_id)).order("TIMESTAMP", desc=True).limit(limit).execute()
-    return response.data
+    try:
+        response = supabase.table("user_chat_history").select("*").eq("conversation_id", str(conversation_id)).order("TIMESTAMP", desc=True).limit(limit).execute()
+        return response.data
+    except Exception as e:
+        logger.error(f"Error getting conversation messages: {str(e)}")
+        return []
 
 async def update_conversation_title(conversation_id: uuid.UUID, title: str) -> Dict:
     """Update a conversation's title"""
-    response = supabase.table("conversations").update({"title": title}).eq("id", str(conversation_id)).execute()
-    return response.data[0] if response.data else {}
+    try:
+        response = supabase.table("conversations").update({
+            "title": title,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", str(conversation_id)).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error updating conversation title: {str(e)}")
+        raise ValueError(f"Failed to update conversation title: {str(e)}")
 
 async def delete_conversation(conversation_id: uuid.UUID) -> bool:
     """Soft delete a conversation"""
     try:
-        from datetime import datetime
-        response = supabase.table("conversations").update({"deleted_at": datetime.now().isoformat()}).eq("id", str(conversation_id)).execute()
+        response = supabase.table("conversations").update({
+            "deleted_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", str(conversation_id)).execute()
         return bool(response.data)
     except Exception as e:
         logger.error(f"Error deleting conversation: {str(e)}")
