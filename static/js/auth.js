@@ -23,11 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('signup-password').value;
 
         try {
+            // Auto-initialize app after successful signup
             await api.signup(email, password);
             signupForm.reset();
-            signupForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-            utils.showError('Signup successful! Please login.');
+            await checkAuthStatus(); // This will show the app section and initialize chat
         } catch (error) {
             utils.showError(error.message || 'Signup failed');
         }

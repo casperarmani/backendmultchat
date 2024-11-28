@@ -149,6 +149,18 @@ async def signup(
         # Create user
         user = await create_user(email, password)
         
+        # Auto-login after signup for better UX
+        auth_response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+
+        if not auth_response.user:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to auto-login after signup"
+            )
+        
         # Generate session
         session_id = secrets.token_urlsafe(32)
         session_data = {
@@ -163,7 +175,7 @@ async def signup(
                 detail="Failed to create session"
             )
 
-        response = JSONResponse(content={"success": True, "message": "Signup successful"})
+        response = JSONResponse(content={"success": True, "message": "Signup and login successful"})
         response.set_cookie(
             key="session_id",
             value=session_id,
