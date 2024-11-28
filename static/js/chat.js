@@ -60,27 +60,44 @@ async function initChat() {
             const submitButton = chatForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             
-            if (!currentConversationId) {
-                await createNewConversation();
-            }
-
-            uploadStatus.textContent = videos.length ? 'Uploading...' : '';
+            // Add message to UI immediately
+            const tempMessage = {
+                message: message,
+                chat_type: 'user',
+                TIMESTAMP: new Date().toISOString()
+            };
+            chatHistory.unshift(tempMessage);
+            renderChatHistory();
 
             // Clear inputs immediately
+            const currentMessage = message;
             messageInput.value = '';
             videoUpload.value = '';
             
-            const response = await api.sendMessage(message, videos, currentConversationId);
-            uploadStatus.textContent = '';
-            
-            // Immediately load new messages
-            await loadConversationMessages(currentConversationId);
-            if (videos.length) {
-                await loadAnalysisHistory();
+            if (!currentConversationId) {
+                currentConversationId = await createNewConversation();
             }
+            
+            uploadStatus.textContent = videos.length ? 'Uploading...' : '';
+            
+            // Send message without waiting for conversation load
+            api.sendMessage(currentMessage, videos, currentConversationId)
+                .then(async (response) => {
+                    uploadStatus.textContent = '';
+                    await loadConversationMessages(currentConversationId);
+                    if (videos.length) {
+                        await loadAnalysisHistory();
+                    }
+                })
+                .catch(error => {
+                    utils.showError('Failed to send message');
+                    // Remove temp message on error
+                    chatHistory = chatHistory.filter(msg => msg !== tempMessage);
+                    renderChatHistory();
+                });
 
         } catch (error) {
-            utils.showError('Failed to send message');
+            utils.showError('Failed to process message');
         } finally {
             isSubmitting = false;
             messageInput.disabled = false;

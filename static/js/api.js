@@ -100,20 +100,32 @@ const api = {
             formData.append('conversation_id', conversationId);
         }
         
-        videos.forEach(video => {
-            formData.append('videos', video);
-        });
-
-        const response = await fetch('/send_message', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to send message');
+        // If there are videos, process them in parallel
+        if (videos.length > 0) {
+            videos.forEach(video => {
+                formData.append('videos', video);
+            });
         }
 
-        return response.json();
+        try {
+            const response = await fetch('/send_message', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
+
+            return response.json();
+        } catch (error) {
+            console.error('Message send error:', error);
+            throw error;
+        }
     },
 
     async updateConversationTitle(conversationId, title) {
