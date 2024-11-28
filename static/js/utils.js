@@ -1,7 +1,26 @@
 // Utility functions
 const utils = {
     formatDate(timestamp) {
-        return new Date(timestamp).toLocaleString();
+        try {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                console.error('Invalid date:', timestamp);
+                return 'Invalid date';
+            }
+            return date.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Invalid date';
+        }
     },
 
     showError(message) {
