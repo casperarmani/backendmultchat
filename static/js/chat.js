@@ -72,7 +72,12 @@ function renderChatHistory() {
     const chatContainer = document.getElementById('chat-history');
     chatContainer.innerHTML = '';
 
-    chatHistory.forEach(message => {
+    // Sort messages in reverse chronological order
+    const sortedMessages = [...chatHistory].sort((a, b) => {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+    });
+
+    sortedMessages.forEach(message => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.chat_type}`;
         messageDiv.innerHTML = `
@@ -81,8 +86,6 @@ function renderChatHistory() {
         `;
         chatContainer.appendChild(messageDiv);
     });
-
-    chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
 function renderAnalysisHistory() {

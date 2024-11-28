@@ -118,6 +118,8 @@ button:hover {
 }
 
 .chat-history {
+    display: flex;
+    flex-direction: column-reverse;
     flex-grow: 1;
     padding: 1rem;
     min-height: 400px;
@@ -129,6 +131,13 @@ button:hover {
     margin-bottom: 1rem;
     padding: 0.75rem;
     border-radius: 4px;
+}
+
+.message-timestamp {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.5rem;
+    text-align: right;
 }
 
 .message.user {
