@@ -82,50 +82,27 @@ const api = {
         return response.json();
     },
 
-    // Store active requests
-    _activeRequests: new Map(),
-
-    // Cancel previous request if it exists
-    _cancelPreviousRequest(requestKey) {
-        if (this._activeRequests.has(requestKey)) {
-            this._activeRequests.get(requestKey).abort();
-            this._activeRequests.delete(requestKey);
-        }
-    },
-
     async sendMessage(message, videos = [], conversationId = null) {
-        try {
-            const formData = new FormData();
-            formData.append('message', message);
-            
-            if (conversationId) {
-                formData.append('conversation_id', conversationId);
-            }
-            
-            if (videos && videos.length > 0) {
-                videos.forEach(video => {
-                    formData.append('videos', video);
-                });
-            }
-
-            const response = await fetch('/send_message', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Failed to send message');
-            }
-
-            return response.json();
-        } catch (error) {
-            console.error('Error sending message:', error);
-            throw error;
+        const formData = new FormData();
+        formData.append('message', message);
+        if (conversationId) {
+            formData.append('conversation_id', conversationId);
         }
+        
+        videos.forEach(video => {
+            formData.append('videos', video);
+        });
+
+        const response = await fetch('/send_message', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to send message');
+        }
+
+        return response.json();
     },
 
     async updateConversationTitle(conversationId, title) {
