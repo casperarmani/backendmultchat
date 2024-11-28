@@ -74,7 +74,7 @@ function renderChatHistory() {
 
     // Sort messages in reverse chronological order
     const sortedMessages = [...chatHistory].sort((a, b) => {
-        return new Date(b.timestamp) - new Date(a.timestamp);
+        return new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP);
     });
 
     sortedMessages.forEach(message => {
@@ -83,20 +83,20 @@ function renderChatHistory() {
         
         // Log timestamp-specific information
         console.log('Timestamp details:', {
-            rawTimestamp: message.timestamp,
-            timestampType: typeof message.timestamp,
-            isISOString: typeof message.timestamp === 'string' && !isNaN(Date.parse(message.timestamp)),
-            parsedDate: new Date(message.timestamp),
+            rawTimestamp: message.TIMESTAMP,
+            timestampType: typeof message.TIMESTAMP,
+            isISOString: typeof message.TIMESTAMP === 'string' && !isNaN(Date.parse(message.TIMESTAMP)),
+            parsedDate: new Date(message.TIMESTAMP),
             messageType: message.chat_type
         });
         
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.chat_type}`;
-        const formattedDate = utils.formatDate(message.timestamp);
+        const formattedDate = utils.formatDate(message.TIMESTAMP);
         
         // Log formatted date result
         console.log('Formatted date result:', {
-            originalTimestamp: message.timestamp,
+            originalTimestamp: message.TIMESTAMP,
             formattedResult: formattedDate
         });
         
