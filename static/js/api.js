@@ -94,36 +94,36 @@ const api = {
     },
 
     async sendMessage(message, videos = [], conversationId = null) {
-        const formData = new FormData();
-        formData.append('message', message);
-        if (conversationId) {
-            formData.append('conversation_id', conversationId);
-        }
-        
-        // If there are videos, process them in parallel
-        if (videos.length > 0) {
-            videos.forEach(video => {
-                formData.append('videos', video);
-            });
-        }
-
         try {
+            const formData = new FormData();
+            formData.append('message', message);
+            
+            if (conversationId) {
+                formData.append('conversation_id', conversationId);
+            }
+            
+            if (videos && videos.length > 0) {
+                videos.forEach(video => {
+                    formData.append('videos', video);
+                });
+            }
+
             const response = await fetch('/send_message', {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                throw new Error('Failed to send message');
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to send message');
             }
 
             return response.json();
         } catch (error) {
-            console.error('Message send error:', error);
+            console.error('Error sending message:', error);
             throw error;
         }
     },
