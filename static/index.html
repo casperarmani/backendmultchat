@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Analysis & Chat</title>
+    <link rel="stylesheet" href="/static/styles/main.css">
+</head>
+<body>
+    <!-- Login Section -->
+    <section id="login-section" class="section">
+        <div class="container">
+            <h1>Video Analysis & Chat</h1>
+            <form id="login-form" class="form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Main App Section -->
+    <section id="app-section" class="section hidden">
+        <header class="app-header">
+            <h2>Video Analysis & Chat</h2>
+            <div class="status-bar">
+                <span id="connection-status" class="status-indicator"></span>
+                <button id="logout-btn">Logout</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="chat-container">
+                <div id="chat-history" class="chat-history"></div>
+                <form id="chat-form" class="chat-input-form">
+                    <div class="upload-container">
+                        <label for="video-upload" class="upload-label">
+                            Upload Video
+                            <input type="file" id="video-upload" accept="video/*" multiple>
+                        </label>
+                        <span id="upload-status"></span>
+                    </div>
+                    <div class="message-container">
+                        <input type="text" id="message-input" placeholder="Type your message...">
+                        <button type="submit">Send</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="analysis-container">
+                <h3>Video Analysis History</h3>
+                <div id="analysis-history"></div>
+            </div>
+        </div>
+    </section>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>

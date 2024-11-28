@@ -98,7 +98,6 @@ app.add_middleware(
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/assets", StaticFiles(directory="static/react/assets"), name="assets")
 
 chatbot = Chatbot()
 
@@ -254,8 +253,8 @@ async def auth_status(request: Request):
         )
 
 @app.get("/", response_class=HTMLResponse)
-async def serve_react_app(request: Request):
-    return FileResponse("static/react/index.html")
+async def serve_static_app(request: Request):
+    return FileResponse("static/index.html")
 
 
 
