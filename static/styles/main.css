@@ -134,10 +134,13 @@ button:hover {
 }
 
 .message-timestamp {
-    font-size: 0.8rem;
-    color: #666;
+    font-size: 0.85rem;
+    color: #555;
     margin-top: 0.5rem;
+    padding: 0.25rem 0;
     text-align: right;
+    border-top: 1px solid #eee;
+    font-weight: 400;
 }
 
 .message.user {

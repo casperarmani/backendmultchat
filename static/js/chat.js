@@ -78,11 +78,19 @@ function renderChatHistory() {
     });
 
     sortedMessages.forEach(message => {
+        console.log('Processing message:', {
+            timestamp: message.timestamp,
+            formattedDate: utils.formatDate(message.timestamp),
+            type: message.chat_type
+        });
+        
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.chat_type}`;
+        const formattedDate = utils.formatDate(message.timestamp);
+        
         messageDiv.innerHTML = `
             <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
-            <div class="message-timestamp">${utils.formatDate(message.timestamp)}</div>
+            <div class="message-timestamp" title="${formattedDate}">${formattedDate}</div>
         `;
         chatContainer.appendChild(messageDiv);
     });
