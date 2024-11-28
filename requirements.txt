@@ -22,6 +22,4 @@ bcrypt
 cryptography
 passlib
 python-jose
-fastapi
-python-multipart
-uvicorn
+
