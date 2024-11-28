@@ -109,8 +109,22 @@ async def update_conversation_title(conversation_id: uuid.UUID, title: str) -> D
 async def delete_conversation(conversation_id: uuid.UUID) -> bool:
     """Soft delete a conversation"""
     try:
+        from datetime import datetime
         response = supabase.table("conversations").update({"deleted_at": datetime.now().isoformat()}).eq("id", str(conversation_id)).execute()
         return bool(response.data)
     except Exception as e:
         logger.error(f"Error deleting conversation: {str(e)}")
         return False
+
+async def get_user_conversations(user_id: uuid.UUID, limit: int = 10) -> List[Dict]:
+    """Get all conversations for a user"""
+    response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", None).order("updated_at", desc=True).limit(limit).execute()
+    return response.data
+
+async def create_conversation(user_id: uuid.UUID, title: str = "New Conversation") -> Dict:
+    """Create a new conversation for a user"""
+    response = supabase.table("conversations").insert({
+        "user_id": str(user_id),
+        "title": title
+    }).execute()
+    return response.data[0] if response.data else {}
