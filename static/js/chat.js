@@ -62,25 +62,57 @@ async function initChat() {
             videoUpload.value = '';
             uploadStatus.textContent = '';
 
-            // Add messages to UI immediately
+            // Add user message to UI immediately
             const timestamp = new Date().toISOString();
-            const newMessages = [
-                {
-                    message: message,
-                    chat_type: 'user',
-                    TIMESTAMP: timestamp,
-                    conversation_id: currentConversationId
-                },
-                {
-                    message: response.response,
-                    chat_type: 'bot',
-                    TIMESTAMP: timestamp,
-                    conversation_id: currentConversationId
-                }
-            ];
+            const userMessage = {
+                message: message,
+                chat_type: 'user',
+                TIMESTAMP: timestamp,
+                conversation_id: currentConversationId
+            };
             
-            // Update chat history and render
-            await loadConversationMessages(currentConversationId);
+            // Add to chat history and render
+            chatHistory.push(userMessage);
+            renderChatHistory();
+            
+            // Start polling for bot response
+            let pollAttempts = 0;
+            const maxAttempts = 30; // 30 seconds with 1-second intervals
+            
+            const pollInterval = setInterval(async () => {
+                try {
+                    pollAttempts++;
+                    const messages = await api.getConversationMessages(currentConversationId);
+                    const botMessages = messages.messages.filter(msg => 
+                        msg.chat_type === 'bot' && 
+                        new Date(msg.TIMESTAMP) > new Date(timestamp)
+                    );
+                    
+                    if (botMessages.length > 0) {
+                        const latestBotMessage = botMessages.sort((a, b) => 
+                            new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP)
+                        )[0];
+                        
+                        // Check if this bot message is already in our chat history
+                        if (!chatHistory.some(msg => 
+                            msg.chat_type === 'bot' && 
+                            msg.TIMESTAMP === latestBotMessage.TIMESTAMP)) {
+                            clearInterval(pollInterval);
+                            chatHistory.push(latestBotMessage);
+                            renderChatHistory();
+                        }
+                    }
+                    
+                    // Stop polling after max attempts
+                    if (pollAttempts >= maxAttempts) {
+                        clearInterval(pollInterval);
+                        console.log('Stopped polling for bot response after timeout');
+                    }
+                } catch (error) {
+                    console.error('Error polling for bot response:', error);
+                    clearInterval(pollInterval);
+                }
+            }, 1000);
             
             // Only reload analysis history if videos were uploaded
             if (videos && videos.length > 0) {
@@ -88,6 +120,7 @@ async function initChat() {
             }
         } catch (error) {
             utils.showError('Failed to send message');
+            console.error('Error sending message:', error);
         } finally {
             messageInput.disabled = false;
         }
