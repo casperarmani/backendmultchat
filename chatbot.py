@@ -59,16 +59,23 @@ class Chatbot:
             safety_settings=safety_settings
         )
         
-        # Initialize chat history and context tracking
-        self.chat_history = []
+        # Initialize session storage and context tracking
+        self.chat_sessions = {}
         self.video_contexts = []
         self.system_prompt = """You are an expert video and content analyzer. 
         Maintain context of ALL interactions including user information, previous chats, and video analyses. Always assume questions are about the most recently analyzed video unless another video is specifically referenced. Absolutely don't mention uploading any new videos if not asked. If asked to analyze or explain again, just explain again without mentioning it was done again. When referring to previous content, be specific about which video you're discussing.
         If you make a mistake, acknowledge it and correct yourself.
         Format your responses using clean markdown with single # for headers and proper indentation."""
-        
-        self.chat_session = self.model.start_chat(history=[])
-        self._add_to_history("system", self.system_prompt)
+
+    def _get_or_create_session(self, conversation_id: str):
+        """Get an existing chat session or create a new one for a conversation"""
+        if conversation_id not in self.chat_sessions:
+            # Create a fresh session
+            session = self.model.start_chat(history=[])
+            # Initialize with system prompt
+            session.send_message(self.system_prompt)
+            self.chat_sessions[conversation_id] = session
+        return self.chat_sessions[conversation_id]
 
     def _format_response(self, response: str, filename: str = '') -> str:
         """Format the response with clean markdown structure"""
@@ -182,8 +189,9 @@ class Chatbot:
                 if prompt:
                     context_prompt += f"\n\nAdditional instructions: {prompt}"
 
-                # Use the chat session for analysis
-                response = await self.chat_session.send_message_async([video_file, context_prompt])
+                # Create a new session for video analysis
+                analysis_session = self.model.start_chat(history=[])
+                response = await analysis_session.send_message_async([video_file, context_prompt])
                 response_text = self._format_response(response.text, filename)
                 
                 # Add analysis to chat history
@@ -203,25 +211,18 @@ class Chatbot:
             logger.error(f"Error analyzing video: {str(e)}")
             return f"An error occurred during video analysis: {str(e)}", None
 
-    async def send_message(self, message: str) -> str:
-        """Send a message while maintaining context"""
+    async def send_message(self, message: str, conversation_id: str = None) -> str:
+        """Send a message while maintaining conversation-specific context"""
         try:
-            # Add user message to history
-            self._add_to_history("user", message)
+            if not conversation_id:
+                raise ValueError("Conversation ID is required for message handling")
+
+            # Get or create session for this conversation
+            session = self._get_or_create_session(conversation_id)
             
-            # Create context-aware prompt
-            context_prompt = (
-                f"Remember these key points from our conversation:\n"
-                f"1. Previous messages: {self.chat_history[-5:] if len(self.chat_history) > 5 else self.chat_history}\n"
-                f"2. Video contexts analyzed: {len(self.video_contexts)} videos\n"
-                f"\nUser's current message: {message}"
-            )
-            
-            response = await self.chat_session.send_message_async(context_prompt)
+            # Send message directly to maintain conversation context
+            response = await session.send_message_async(message)
             response_text = self._format_response(response.text)
-            
-            # Add bot response to history
-            self._add_to_history("bot", response_text)
             
             return response_text
         except Exception as e:
