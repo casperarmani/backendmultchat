@@ -17,4 +17,4 @@ COOKIE_SAMESITE = "lax"
 # - Task queues
 # - Rate limiting data
 # - Video analysis caches
-SESSION_CLEANUP_INTERVAL = 10800
+SESSION_CLEANUP_INTERVAL = 7200  # Changed from 3 hours to 2 hours
