@@ -9,7 +9,7 @@ async function initChat() {
     const messageInput = document.getElementById('message-input');
     const videoUpload = document.getElementById('video-upload');
     const uploadStatus = document.getElementById('upload-status');
-    const chatHistory = document.getElementById('chat-history');
+    const chatHistoryContainer = document.getElementById('chat-history');
 
     // Add conversation container to the chat interface
     const conversationsContainer = document.createElement('div');
@@ -21,7 +21,7 @@ async function initChat() {
         </div>
         <div id="conversations-list" class="conversations-list"></div>
     `;
-    chatHistory.parentElement.insertBefore(conversationsContainer, chatHistory);
+    chatHistoryContainer.parentElement.insertBefore(conversationsContainer, chatHistoryContainer);
 
     // Setup event listeners
     document.getElementById('new-conversation-btn').addEventListener('click', createNewConversation);
@@ -223,8 +223,7 @@ async function loadAnalysisHistory() {
 }
 
 function renderChatHistory() {
-    const chatContainer = document.getElementById('chat-history');
-    chatContainer.innerHTML = '';
+    chatHistoryContainer.innerHTML = '';
 
     // Sort messages by timestamp
     const sortedMessages = [...chatHistory].sort((a, b) => {
@@ -240,11 +239,11 @@ function renderChatHistory() {
             <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
             <div class="message-timestamp" title="${formattedDate}">${formattedDate}</div>
         `;
-        chatContainer.appendChild(messageDiv);
+        chatHistoryContainer.appendChild(messageDiv);
     });
     
     // Scroll to bottom
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
 }
 
 function renderAnalysisHistory() {
