@@ -227,11 +227,12 @@ class RedisManager:
             return False
 
     async def cleanup_expired_sessions(self):
-        """Clean up expired sessions"""
+        """Clean up expired sessions and related conversation data"""
         try:
             pattern = f"{self.session_prefix}*"
             cursor = 0
-            cleaned = 0
+            cleaned_sessions = 0
+            cleaned_conversations = 0
             
             while True:
                 cursor, keys = self._retry_operation(self.redis.scan, cursor, match=pattern)
@@ -244,9 +245,33 @@ class RedisManager:
                             session_data = self._deserialize_value(session_data, dict)
                             if session_data and isinstance(session_data, dict):
                                 last_refresh = session_data.get('last_refresh', 0)
+                                user_id = session_data.get('id')
+                                
                                 if current_time - last_refresh > self.session_ttl:
+                                    # Clean up session
                                     self._retry_operation(self.redis.delete, key)
-                                    cleaned += 1
+                                    cleaned_sessions += 1
+                                    
+                                    if user_id:
+                                        # Clean up user's chat history cache
+                                        chat_history_key = f"chat_history:{user_id}"
+                                        self._retry_operation(self.redis.delete, chat_history_key)
+                                        
+                                        # Clean up user's conversation caches
+                                        conv_pattern = f"conversation:*:{user_id}"
+                                        conv_cursor = 0
+                                        while True:
+                                            conv_cursor, conv_keys = self._retry_operation(
+                                                self.redis.scan,
+                                                conv_cursor,
+                                                match=conv_pattern
+                                            )
+                                            if conv_keys:
+                                                self._retry_operation(self.redis.delete, *conv_keys)
+                                                cleaned_conversations += len(conv_keys)
+                                            if conv_cursor == 0:
+                                                break
+                                                
                     except Exception as e:
                         logger.error(f"Error processing session key {key}: {str(e)}")
                         continue
@@ -254,7 +279,10 @@ class RedisManager:
                 if cursor == 0:
                     break
                     
-            logger.info(f"Cleaned up {cleaned} expired sessions")
+            logger.info(
+                f"Cleaned up {cleaned_sessions} expired sessions and "
+                f"{cleaned_conversations} related conversation caches"
+            )
             
         except Exception as e:
             logger.error(f"Error in session cleanup: {str(e)}")

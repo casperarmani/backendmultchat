@@ -11,5 +11,5 @@ COOKIE_SECURE = True
 COOKIE_HTTPONLY = True
 COOKIE_SAMESITE = "lax"
 
-# Cleanup interval in seconds (1 hour)
-SESSION_CLEANUP_INTERVAL = 3600
+# Cleanup interval in seconds (2 hours to reduce overhead with multi-chat structure)
+SESSION_CLEANUP_INTERVAL = 7200
