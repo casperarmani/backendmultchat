@@ -534,7 +534,8 @@ async def send_message(
                 if await redis_storage.store_file(file_id, content):
                     analysis_text, metadata = await chatbot.analyze_video(
                         file_id=file_id,
-                        filename=video.filename
+                        filename=video.filename,
+                        conversation_id=conversation_id
                     )
                     
                     # Queue analysis task
@@ -558,8 +559,8 @@ async def send_message(
                         video_format=metadata.get('format') if metadata else None
                     ))
         
-        # Get chatbot response
-        response_text = await chatbot.send_message(message)
+        # Get chatbot response with conversation context
+        response_text = await chatbot.send_message(message, conversation_id)
         
         # Insert messages in parallel
         conv_id = uuid.UUID(conversation_id) if conversation_id else None
