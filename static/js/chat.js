@@ -1,8 +1,8 @@
 // Chat functionality
-let chatHistory = [];
-let analysisHistory = [];
-let conversations = [];
-let currentConversationId = null;
+window.chatHistory = [];
+window.analysisHistory = [];
+window.conversations = [];
+window.currentConversationId = null;
 
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
@@ -167,10 +167,16 @@ async function loadConversationMessages(conversationId) {
     try {
         if (!conversationId) return;
         const response = await api.getConversationMessages(conversationId);
-        chatHistory = response.messages || [];
+        if (response && Array.isArray(response.messages)) {
+            chatHistory = response.messages;
+        } else {
+            chatHistory = [];
+        }
         renderChatHistory();
     } catch (error) {
         console.error('Failed to load conversation messages:', error);
+        chatHistory = [];
+        renderChatHistory();
     }
 }
 
