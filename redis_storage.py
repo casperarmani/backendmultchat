@@ -194,11 +194,17 @@ class RedisFileStorage:
             return False
 
     async def cleanup_expired_files(self):
-        """Cleanup task to remove expired files"""
+        """Cleanup task to remove expired files and orphaned data"""
         try:
             current_time = time.time()
             pattern = f"{self.video_prefix}*:metadata"
             logger.info(f"Starting cleanup task, scanning for pattern: {pattern}")
+            
+            stats = {
+                "expired_files": 0,
+                "orphaned_chunks": 0,
+                "failed_cleanups": 0
+            }
             
             # Scan for all file metadata keys
             cursor = 0
@@ -208,22 +214,47 @@ class RedisFileStorage:
                 for key in keys:
                     try:
                         metadata = self.redis_client.hgetall(key.decode('utf-8'))
+                        file_id = key.decode('utf-8').split(':')[1]
+                        
                         if not metadata:
+                            # Handle orphaned chunks without metadata
+                            chunk_pattern = f"{self.video_prefix}{file_id}:chunk:*"
+                            chunk_cursor = 0
+                            while True:
+                                chunk_cursor, chunk_keys = self.redis_client.scan(
+                                    chunk_cursor,
+                                    match=chunk_pattern
+                                )
+                                if chunk_keys:
+                                    self.redis_client.delete(*chunk_keys)
+                                    stats["orphaned_chunks"] += len(chunk_keys)
+                                if chunk_cursor == 0:
+                                    break
                             continue
 
-                        file_id = key.decode('utf-8').split(':')[1]
                         timestamp = self._decode_metadata(metadata[b'timestamp'], float)
                         
                         # Check if file has expired
                         if current_time - timestamp > self.ttl:
                             logger.info(f"Found expired video: {file_id}, age: {current_time - timestamp}s")
-                            await self.delete_file(file_id)
+                            if await self.delete_file(file_id):
+                                stats["expired_files"] += 1
+                            else:
+                                stats["failed_cleanups"] += 1
+                                
                     except Exception as e:
                         logger.error(f"Error processing metadata for key {key}: {str(e)}")
+                        stats["failed_cleanups"] += 1
                         continue
 
                 if cursor == 0:
                     break
+                    
+            logger.info(
+                f"Cleanup completed - Expired files: {stats['expired_files']}, "
+                f"Orphaned chunks: {stats['orphaned_chunks']}, "
+                f"Failed cleanups: {stats['failed_cleanups']}"
+            )
 
         except Exception as e:
             logger.error(f"Error in cleanup task: {str(e)}")

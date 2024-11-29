@@ -285,7 +285,7 @@ class RedisManager:
                                             if conv_cursor == 0:
                                                 break
                                         
-                                        # Clean up task queues for user
+                                        # Clean up task queues and incomplete processing for user
                                         task_pattern = f"{self.queue_prefix}*:{user_id}"
                                         task_cursor = 0
                                         while True:
@@ -295,6 +295,41 @@ class RedisManager:
                                                 match=task_pattern
                                             )
                                             if task_keys:
+                                                for key in task_keys:
+                                                    try:
+                                                        task_data = self._retry_operation(
+                                                            self.redis.get,
+                                                            key
+                                                        )
+                                                        if task_data:
+                                                            task_info = json.loads(task_data)
+                                                            # Clean up any associated video files
+                                                            if (task_info.get('type') in 
+                                                                [TaskType.VIDEO_PROCESSING.value, 
+                                                                 TaskType.VIDEO_ANALYSIS.value]):
+                                                                file_id = task_info.get('payload', {}).get('file_id')
+                                                                if file_id:
+                                                                    # Delete any associated files
+                                                                    file_pattern = f"video:{file_id}*"
+                                                                    file_cursor = 0
+                                                                    while True:
+                                                                        file_cursor, file_keys = self._retry_operation(
+                                                                            self.redis.scan,
+                                                                            file_cursor,
+                                                                            match=file_pattern
+                                                                        )
+                                                                        if file_keys:
+                                                                            self._retry_operation(
+                                                                                self.redis.delete,
+                                                                                *file_keys
+                                                                            )
+                                                                        if file_cursor == 0:
+                                                                            break
+                                                    except json.JSONDecodeError:
+                                                        pass
+                                                    except Exception as e:
+                                                        logger.error(f"Error cleaning task data: {str(e)}")
+                                                
                                                 self._retry_operation(self.redis.delete, *task_keys)
                                                 stats["tasks"] += len(task_keys)
                                             if task_cursor == 0:
