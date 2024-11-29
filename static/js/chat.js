@@ -3,13 +3,14 @@ window.chatHistory = [];
 window.analysisHistory = [];
 window.conversations = [];
 window.currentConversationId = null;
+window.chatHistoryContainer = null;
 
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
     const videoUpload = document.getElementById('video-upload');
     const uploadStatus = document.getElementById('upload-status');
-    const chatHistoryContainer = document.getElementById('chat-history');
+    window.chatHistoryContainer = document.getElementById('chat-history');
 
     // Add conversation container to the chat interface
     const conversationsContainer = document.createElement('div');
