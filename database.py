@@ -5,6 +5,9 @@ logger = logging.getLogger(__name__)
 from supabase.client import create_client, Client
 from typing import List, Dict, Optional
 import uuid
+from redis_manager import RedisManager
+
+redis_manager = RedisManager(os.environ.get('REDIS_URL'))
 
 # Initialize Supabase client
 supabase_url = os.environ.get("SUPABASE_URL")

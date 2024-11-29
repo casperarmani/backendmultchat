@@ -569,10 +569,14 @@ async def send_message(
         ]
         await asyncio.gather(*message_tasks)
         
-        # Update only conversation cache instead of all chat history
+        # Update both caches to maintain consistency
         if conversation_id:
-            cache_key = f"conversation:{conversation_id}"
-            redis_manager.invalidate_cache(cache_key)
+            conv_cache_key = f"conversation:{conversation_id}"
+            redis_manager.invalidate_cache(conv_cache_key)
+        
+        # Also update user's chat history cache
+        user_cache_key = f"chat_history:{user['id']}"
+        redis_manager.invalidate_cache(user_cache_key)
         
         return JSONResponse(content={
             "response": response_text,
