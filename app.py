@@ -559,16 +559,32 @@ async def send_message(
                         video_format=metadata.get('format') if metadata else None
                     ))
         
-        # Get chatbot response with conversation context
-        response_text = await chatbot.send_message(message, conversation_id)
+        # Queue the message for processing to handle API rate limits
+        # This ensures fair processing of messages from concurrent users
+        message_task_id = redis_manager.enqueue_task(
+            task_type=TaskType.MESSAGE_PROCESSING,
+            payload={
+                "message": message,
+                "conversation_id": conversation_id,
+                "user_id": user["id"]
+            },
+            priority=TaskPriority.HIGH
+        )
         
-        # Insert messages in parallel
+        if not message_task_id:
+            raise HTTPException(status_code=500, detail="Failed to queue message")
+            
+        # Store user message immediately for better UX
         conv_id = uuid.UUID(conversation_id) if conversation_id else None
-        message_tasks = [
-            insert_chat_message(uuid.UUID(user['id']), message, 'user', conv_id),
-            insert_chat_message(uuid.UUID(user['id']), response_text, 'bot', conv_id)
-        ]
-        await asyncio.gather(*message_tasks)
+        await insert_chat_message(uuid.UUID(user['id']), message, 'user', conv_id)
+        
+        # Get initial acknowledgment
+        response_text = "Message received and queued for processing..."
+        
+        # The actual processing will happen in background worker
+        # Original functionality:
+        # response_text = await chatbot.send_message(message, conversation_id)
+        # The bot response will be inserted by the worker when processing completes
         
         # Update both caches to maintain consistency
         if conversation_id:

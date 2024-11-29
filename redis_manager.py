@@ -27,6 +27,7 @@ class TaskType(Enum):
     VIDEO_PROCESSING = "video_processing"
     VIDEO_ANALYSIS = "video_analysis"
     MAINTENANCE = "maintenance"
+    MESSAGE_PROCESSING = "message_processing"  # Added for handling chat message queuing
 
 class TaskStatus(Enum):
     PENDING = "pending"
