@@ -60,6 +60,8 @@ class Chatbot:
         )
         
         # Initialize chat history and context tracking
+        self.chat_history = []  # Keep global history for backward compatibility
+        self.video_contexts = []  # Keep global contexts for backward compatibility
         # Store sessions for each conversation
         self.sessions = {}
         self.system_prompt = """You are an expert video and content analyzer. 
@@ -97,8 +99,21 @@ class Chatbot:
 
         return '\n\n'.join(formatted_lines)
 
-    def _get_or_create_session(self, conversation_id: str) -> dict:
-        """Get or create a new chat session for a conversation"""
+    def _get_or_create_session(self, conversation_id: str = None) -> dict:
+        """Get or create a new chat session for a conversation
+        If conversation_id is None, returns a session using global history"""
+        if conversation_id is None:
+            # Use global context if no conversation_id provided
+            if 'global' not in self.sessions:
+                self.sessions['global'] = {
+                    'chat_session': self.model.start_chat(history=[]),
+                    'chat_history': self.chat_history,  # Use global history
+                    'video_contexts': self.video_contexts  # Use global contexts
+                }
+                if not self.chat_history:  # Only add system prompt if history is empty
+                    self._add_to_history('global', "system", self.system_prompt)
+            return self.sessions['global']
+            
         if conversation_id not in self.sessions:
             self.sessions[conversation_id] = {
                 'chat_session': self.model.start_chat(history=[]),
@@ -110,13 +125,19 @@ class Chatbot:
 
     def _add_to_history(self, conversation_id: str, role: str, content: str):
         """Add message to chat history with timezone-aware timestamp"""
+        message = {
+            "role": role,
+            "content": content,
+            "timestamp": datetime.datetime.now(timezone.utc).isoformat()
+        }
+        
         session = self.sessions.get(conversation_id)
         if session:
-            session['chat_history'].append({
-                "role": role,
-                "content": content,
-                "timestamp": datetime.datetime.now(timezone.utc).isoformat()
-            })
+            session['chat_history'].append(message)
+            
+        # Maintain global history for backward compatibility
+        if conversation_id == 'global':
+            self.chat_history.append(message)
 
     async def extract_video_metadata(self, video_content: bytes) -> Optional[Dict]:
         """Extract metadata from video content"""
@@ -222,8 +243,9 @@ class Chatbot:
             logger.error(f"Error analyzing video: {str(e)}")
             return f"An error occurred during video analysis: {str(e)}", None
 
-    async def send_message(self, message: str, conversation_id: str) -> str:
-        """Send a message while maintaining context for specific conversation"""
+    async def send_message(self, message: str, conversation_id: str = None) -> str:
+        """Send a message while maintaining context for specific conversation
+        If conversation_id is None, uses global context for backward compatibility"""
         try:
             session = self._get_or_create_session(conversation_id)
             
