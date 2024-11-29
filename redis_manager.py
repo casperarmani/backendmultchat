@@ -227,12 +227,17 @@ class RedisManager:
             return False
 
     async def cleanup_expired_sessions(self):
-        """Clean up expired sessions and related conversation data"""
+        """Clean up expired sessions and all related data including conversations, tasks, and rate limits"""
         try:
             pattern = f"{self.session_prefix}*"
             cursor = 0
-            cleaned_sessions = 0
-            cleaned_conversations = 0
+            stats = {
+                "sessions": 0,
+                "conversations": 0,
+                "rate_limits": 0,
+                "tasks": 0,
+                "caches": 0
+            }
             
             while True:
                 cursor, keys = self._retry_operation(self.redis.scan, cursor, match=pattern)
@@ -246,18 +251,25 @@ class RedisManager:
                             if session_data and isinstance(session_data, dict):
                                 last_refresh = session_data.get('last_refresh', 0)
                                 user_id = session_data.get('id')
+                                email = session_data.get('email')
                                 
                                 if current_time - last_refresh > self.session_ttl:
                                     # Clean up session
                                     self._retry_operation(self.redis.delete, key)
-                                    cleaned_sessions += 1
+                                    stats["sessions"] += 1
                                     
                                     if user_id:
                                         # Clean up user's chat history cache
                                         chat_history_key = f"chat_history:{user_id}"
                                         self._retry_operation(self.redis.delete, chat_history_key)
+                                        stats["caches"] += 1
                                         
-                                        # Clean up user's conversation caches
+                                        # Clean up user's video analysis cache
+                                        video_history_key = f"video_history:{user_id}"
+                                        self._retry_operation(self.redis.delete, video_history_key)
+                                        stats["caches"] += 1
+                                        
+                                        # Clean up conversation caches and data
                                         conv_pattern = f"conversation:*:{user_id}"
                                         conv_cursor = 0
                                         while True:
@@ -267,9 +279,41 @@ class RedisManager:
                                                 match=conv_pattern
                                             )
                                             if conv_keys:
+                                                # Delete conversation caches
                                                 self._retry_operation(self.redis.delete, *conv_keys)
-                                                cleaned_conversations += len(conv_keys)
+                                                stats["conversations"] += len(conv_keys)
                                             if conv_cursor == 0:
+                                                break
+                                        
+                                        # Clean up task queues for user
+                                        task_pattern = f"{self.queue_prefix}*:{user_id}"
+                                        task_cursor = 0
+                                        while True:
+                                            task_cursor, task_keys = self._retry_operation(
+                                                self.redis.scan,
+                                                task_cursor,
+                                                match=task_pattern
+                                            )
+                                            if task_keys:
+                                                self._retry_operation(self.redis.delete, *task_keys)
+                                                stats["tasks"] += len(task_keys)
+                                            if task_cursor == 0:
+                                                break
+                                    
+                                    if email:
+                                        # Clean up rate limit data
+                                        rate_pattern = f"{self.rate_prefix}*:{email}"
+                                        rate_cursor = 0
+                                        while True:
+                                            rate_cursor, rate_keys = self._retry_operation(
+                                                self.redis.scan,
+                                                rate_cursor,
+                                                match=rate_pattern
+                                            )
+                                            if rate_keys:
+                                                self._retry_operation(self.redis.delete, *rate_keys)
+                                                stats["rate_limits"] += len(rate_keys)
+                                            if rate_cursor == 0:
                                                 break
                                                 
                     except Exception as e:
@@ -280,8 +324,11 @@ class RedisManager:
                     break
                     
             logger.info(
-                f"Cleaned up {cleaned_sessions} expired sessions and "
-                f"{cleaned_conversations} related conversation caches"
+                f"Cleanup completed - Sessions: {stats['sessions']}, "
+                f"Conversations: {stats['conversations']}, "
+                f"Rate limits: {stats['rate_limits']}, "
+                f"Tasks: {stats['tasks']}, "
+                f"Caches: {stats['caches']}"
             )
             
         except Exception as e:
