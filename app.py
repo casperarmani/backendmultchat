@@ -77,8 +77,46 @@ async def startup_event():
         while True:
             await redis_manager.cleanup_expired_sessions()
             await asyncio.sleep(SESSION_CLEANUP_INTERVAL)
+
+    async def process_message_queue():
+        while True:
+            try:
+                # Process high priority message queue
+                queue_key = redis_manager._get_queue_key(TaskPriority.HIGH, TaskType.MESSAGE_PROCESSING)
+                task = redis_manager.dequeue_task(queue_key)
+                
+                if task and task.get('payload'):
+                    payload = task['payload']
+                    user_id = payload.get('user_id')
+                    message = payload.get('message')
+                    conversation_id = payload.get('conversation_id')
+                    
+                    if user_id and message:
+                        # Process the message with chatbot
+                        response_text = await chatbot.send_message(message, conversation_id)
+                        
+                        # Store bot response
+                        conv_id = uuid.UUID(conversation_id) if conversation_id else None
+                        await insert_chat_message(
+                            uuid.UUID(user_id),
+                            response_text,
+                            'bot',
+                            conv_id
+                        )
+                        
+                        # Update caches
+                        if conversation_id:
+                            redis_manager.invalidate_cache(f"conversation:{conversation_id}")
+                        redis_manager.invalidate_cache(f"chat_history:{user_id}")
+                
+            except Exception as e:
+                logger.error(f"Error processing message queue: {str(e)}")
+                
+            # Add a small delay to prevent CPU overload
+            await asyncio.sleep(0.1)
     
     asyncio.create_task(cleanup_sessions())
+    asyncio.create_task(process_message_queue())
 
 # Configure CORS with specific origin
 origins = [
@@ -559,6 +597,13 @@ async def send_message(
                         video_format=metadata.get('format') if metadata else None
                     ))
         
+        # Check rate limit for message processing
+        if not redis_manager.check_rate_limit("message_processing", f"user:{user['id']}"):
+            raise HTTPException(
+                status_code=429,
+                detail="Too many messages. Please wait a moment before sending more."
+            )
+
         # Queue the message for processing to handle API rate limits
         # This ensures fair processing of messages from concurrent users
         message_task_id = redis_manager.enqueue_task(
@@ -566,7 +611,8 @@ async def send_message(
             payload={
                 "message": message,
                 "conversation_id": conversation_id,
-                "user_id": user["id"]
+                "user_id": user["id"],
+                "timestamp": time.time()
             },
             priority=TaskPriority.HIGH
         )
