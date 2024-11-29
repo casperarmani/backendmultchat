@@ -363,65 +363,45 @@ async def get_video_analysis_history_endpoint(request: Request):
 
 @app.get("/health")
 async def health_check():
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "services": {
+            "redis": await redis_manager.health_check(),
+            "supabase": {
+                "status": "unknown",
+                "details": None
+            }
+        }
+    }
+    
     try:
-        health_status = {
-            "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
-            "services": {
-                "redis": "unknown",
-                "supabase": "unknown"
-            }
-        }
-        
-        # Check Redis health
-        try:
-            redis_health = await redis_manager.health_check()
-            health_status["services"]["redis"] = {
-                "status": "healthy" if redis_health else "unhealthy",
-                "details": redis_health
-            }
-        except Exception as redis_error:
-            health_status["services"]["redis"] = {
-                "status": "unhealthy",
-                "details": {"error": str(redis_error)}
-            }
-            health_status["status"] = "degraded"
-        
-        # Check Supabase health
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{supabase_url}/rest/v1/",
-                    headers={"apikey": supabase_key},
-                    timeout=5.0
-                )
-                
-                if response.status_code == 200:
-                    health_status["services"]["supabase"] = {
-                        "status": "healthy",
-                        "details": {"status_code": response.status_code}
-                    }
-                else:
-                    health_status["services"]["supabase"] = {
-                        "status": "degraded",
-                        "details": {"status_code": response.status_code}
-                    }
-                    health_status["status"] = "degraded"
-        except Exception as supabase_error:
-            health_status["services"]["supabase"] = {
-                "status": "unhealthy",
-                "details": {"error": str(supabase_error)}
-            }
-            health_status["status"] = "unhealthy"
-        
-        return health_status
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{supabase_url}/health",
+                headers={"apikey": supabase_key},
+                timeout=5.0
+            )
+            
+            if response.status_code == 200:
+                health_status["services"]["supabase"] = {
+                    "status": "healthy",
+                    "details": response.json()
+                }
+            else:
+                health_status["services"]["supabase"] = {
+                    "status": "degraded",
+                    "details": {"status_code": response.status_code}
+                }
+                health_status["status"] = "degraded"
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        return {
+        health_status["services"]["supabase"] = {
             "status": "unhealthy",
-            "timestamp": datetime.utcnow().isoformat(),
-            "error": str(e)
+            "details": {"error": str(e)}
         }
+        health_status["status"] = "unhealthy"
+    
+    return health_status
 
 @app.get("/metrics")
 async def metrics():
@@ -578,8 +558,8 @@ async def send_message(
                         video_format=metadata.get('format') if metadata else None
                     ))
         
-        # Get chatbot response with conversation-specific context
-        response_text = await chatbot.send_message(message, str(conv_id) if conv_id else None)
+        # Get chatbot response
+        response_text = await chatbot.send_message(message)
         
         # Insert messages in parallel
         conv_id = uuid.UUID(conversation_id) if conversation_id else None
