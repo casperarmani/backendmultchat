@@ -126,8 +126,8 @@ async def get_conversation_messages(conversation_id: uuid.UUID, limit: int = 50)
         response = supabase.table("user_chat_history").select("*").eq("conversation_id", str(conversation_id)).order("TIMESTAMP", desc=True).limit(limit).execute()
         
         if response.data:
-            # Cache the results
-            redis_manager.set_cache(cache_key, response.data, expire=300)  # Cache for 5 minutes
+            # Cache the results for 5 minutes
+            redis_manager.set_cache(cache_key, response.data)
             return response.data
         return []
     except Exception as e:

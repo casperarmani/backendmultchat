@@ -80,8 +80,7 @@ async function initChat() {
             ];
             
             // Update chat history and render
-            chatHistory = [...chatHistory, ...newMessages];
-            renderChatHistory();
+            await loadConversationMessages(currentConversationId);
             
             // Only reload analysis history if videos were uploaded
             if (videos && videos.length > 0) {
