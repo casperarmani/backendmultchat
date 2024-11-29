@@ -514,13 +514,14 @@ async def send_message(
     user = await get_current_user(request)
     
     try:
+        # Process videos asynchronously if present
         if videos:
             for video in videos:
                 content = await video.read()
                 file_id = str(uuid.uuid4())
                 
-                # Add video processing task to queue
-                task_id = redis_manager.enqueue_task(
+                # Queue video processing task
+                redis_manager.enqueue_task(
                     task_type=TaskType.VIDEO_PROCESSING,
                     payload={
                         "file_id": file_id,
@@ -536,8 +537,8 @@ async def send_message(
                         filename=video.filename
                     )
                     
-                    # Add video analysis task to queue
-                    analysis_task_id = redis_manager.enqueue_task(
+                    # Queue analysis task
+                    redis_manager.enqueue_task(
                         task_type=TaskType.VIDEO_ANALYSIS,
                         payload={
                             "file_id": file_id,
@@ -548,24 +549,35 @@ async def send_message(
                         priority=TaskPriority.MEDIUM
                     )
                     
-                    await insert_video_analysis(
+                    # Store analysis in background
+                    asyncio.create_task(insert_video_analysis(
                         user_id=uuid.UUID(user['id']),
                         upload_file_name=video.filename,
                         analysis=analysis_text,
                         video_duration=metadata.get('duration') if metadata else None,
                         video_format=metadata.get('format') if metadata else None
-                    )
+                    ))
         
+        # Get chatbot response
         response_text = await chatbot.send_message(message)
         
+        # Insert messages in parallel
         conv_id = uuid.UUID(conversation_id) if conversation_id else None
-        await insert_chat_message(uuid.UUID(user['id']), message, 'user', conv_id)
-        await insert_chat_message(uuid.UUID(user['id']), response_text, 'bot', conv_id)
+        message_tasks = [
+            insert_chat_message(uuid.UUID(user['id']), message, 'user', conv_id),
+            insert_chat_message(uuid.UUID(user['id']), response_text, 'bot', conv_id)
+        ]
+        await asyncio.gather(*message_tasks)
         
-        cache_key = f"chat_history:{user['id']}"
-        redis_manager.invalidate_cache(cache_key)
+        # Update only conversation cache instead of all chat history
+        if conversation_id:
+            cache_key = f"conversation:{conversation_id}"
+            redis_manager.invalidate_cache(cache_key)
         
-        return JSONResponse(content={"response": response_text})
+        return JSONResponse(content={
+            "response": response_text,
+            "conversation_id": str(conv_id) if conv_id else None
+        })
         
     except Exception as e:
         logger.error(f"Error processing message: {str(e)}")

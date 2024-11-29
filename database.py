@@ -110,10 +110,23 @@ async def create_conversation(user_id: uuid.UUID, title: str = "New Conversation
         raise ValueError(f"Failed to create conversation: {str(e)}")
 
 async def get_conversation_messages(conversation_id: uuid.UUID, limit: int = 50) -> List[Dict]:
-    """Get all messages in a conversation"""
+    """Get all messages in a conversation with caching"""
     try:
+        cache_key = f"conversation:{str(conversation_id)}"
+        
+        # Try to get from cache first
+        cached_messages = redis_manager.get_cache(cache_key)
+        if cached_messages:
+            return cached_messages
+            
+        # If not in cache, get from database
         response = supabase.table("user_chat_history").select("*").eq("conversation_id", str(conversation_id)).order("TIMESTAMP", desc=True).limit(limit).execute()
-        return response.data
+        
+        if response.data:
+            # Cache the results
+            redis_manager.set_cache(cache_key, response.data, expire=300)  # Cache for 5 minutes
+            return response.data
+        return []
     except Exception as e:
         logger.error(f"Error getting conversation messages: {str(e)}")
         return []

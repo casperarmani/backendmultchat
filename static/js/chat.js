@@ -62,9 +62,31 @@ async function initChat() {
             videoUpload.value = '';
             uploadStatus.textContent = '';
 
-            // Reload conversation messages
-            await loadConversationMessages(currentConversationId);
-            await loadAnalysisHistory();
+            // Add messages to UI immediately
+            const timestamp = new Date().toISOString();
+            const newMessages = [
+                {
+                    message: message,
+                    chat_type: 'user',
+                    TIMESTAMP: timestamp,
+                    conversation_id: currentConversationId
+                },
+                {
+                    message: response.response,
+                    chat_type: 'bot',
+                    TIMESTAMP: timestamp,
+                    conversation_id: currentConversationId
+                }
+            ];
+            
+            // Update chat history and render
+            chatHistory = [...chatHistory, ...newMessages];
+            renderChatHistory();
+            
+            // Only reload analysis history if videos were uploaded
+            if (videos && videos.length > 0) {
+                await loadAnalysisHistory();
+            }
         } catch (error) {
             utils.showError('Failed to send message');
         } finally {
