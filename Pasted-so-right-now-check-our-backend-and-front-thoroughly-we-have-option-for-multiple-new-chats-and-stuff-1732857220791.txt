@@ -1,0 +1,113 @@
+so right now check our backend and front thoroughly, we have option for multiple new chats and stuff but its just history. It retains the same chatbot session across them all. We want each chat to be its own chatbot session but we absolutely cannot break any functionality
+
+
+AI
+AI
+just now
+Let me analyze this step by step:
+
+Current State:
+The Chatbot class maintains a single chat session with history and video contexts
+The frontend has multiple conversations UI but shares same chatbot instance
+Database supports multiple conversations via conversation_id
+Required Changes:
+First, let's modify the Chatbot class to support multiple sessions:
+
+class Chatbot:
+    def __init__(self):
+        self.generation_config = genai.types.GenerationConfig(
+            temperature=0.9,
+            top_p=1,
+            top_k=1,
+            max_output_tokens=2048,
+        )
+        
+        self.safety_settings = {
+            "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+            "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+            "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+            "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+        }
+        
+        self.model = genai.GenerativeModel(
+            model_name="models/gemini-1.5-pro-002",
+            generation_config=self.generation_config,
+            safety_settings=self.safety_settings
+        )
+        
+        # Store multiple chat sessions
+        self.sessions = {}
+        self.system_prompt = """You are an expert video and content analyzer..."""
+    def create_session(self, conversation_id: str):
+        """Create a new chat session for a conversation"""
+        if conversation_id not in self.sessions:
+            self.sessions[conversation_id] = {
+                'chat_session': self.model.start_chat(history=[]),
+                'chat_history': [],
+                'video_contexts': []
+            }
+            self._add_to_history(conversation_id, "system", self.system_prompt)
+        return self.sessions[conversation_id]
+    def _add_to_history(self, conversation_id: str, role: str, content: str):
+        session = self.sessions.get(conversation_id)
+        if session:
+            session['chat_history'].append({
+                "role": role,
+                "content": content,
+                "timestamp": datetime.datetime.now(timezone.utc).isoformat()
+            })
+    async def send_message(self, conversation_id: str, message: str) -> str:
+        """Send a message in specific conversation context"""
+        session = self.create_session(conversation_id)
+        try:
+            self._add_to_history(conversation_id, "user", message)
+            
+            context_prompt = (
+                f"Remember these key points from our conversation:\n"
+                f"1. Previous messages: {session['chat_history'][-5:] if len(session['chat_history']) > 5 else session['chat_history']}\n"
+                f"2. Video contexts analyzed: {len(session['video_contexts'])} videos\n"
+                f"\nUser's current message: {message}"
+            )
+            
+            response = await session['chat_session'].send_message_async(context_prompt)
+            response_text = self._format_response(response.text)
+            
+            self._add_to_history(conversation_id, "bot", response_text)
+            return response_text
+        except Exception as e:
+            logger.error(f"Error sending message: {str(e)}")
+            if "429" in str(e) or "quota" in str(e).lower():
+                return "I apologize, but the API quota has been exceeded. Please try again in a few minutes."
+            return "I apologize, but there was an unexpected error. Please try again."
+    async def analyze_video(self, conversation_id: str, file_id: str, filename: str, prompt: str = '') -> tuple[str, Optional[Dict]]:
+        """Analyze video in specific conversation context"""
+        session = self.create_session(conversation_id)
+        # ... rest of the analyze_video code, but using session['chat_session'] ...
+Then modify the FastAPI endpoints to use conversation-specific sessions:
+
+@app.post("/api/chat/message")
+async def chat_message(
+    request: Request,
+    message: str = Form(...),
+    conversation_id: str = Form(...)
+):
+    user = await get_current_user(request)
+    response = await chatbot.send_message(conversation_id, message)
+    await insert_chat_message(user['id'], message, 'text', conversation_id)
+    return {"response": response}
+@app.post("/api/chat/analyze")
+async def analyze_video(
+    request: Request,
+    file: UploadFile,
+    conversation_id: str = Form(...)
+):
+    user = await get_current_user(request)
+    # ... rest of the endpoint code but passing conversation_id to chatbot.analyze_video ...
+This approach:
+
+Maintains separate chat sessions per conversation
+Preserves all existing functionality
+Keeps video context separate per conversation
+Uses existing database structure
+Requires minimal frontend changes since conversation_id is already being tracked
+The only caution is memory usage since we're storing multiple sessions. You might want to add a cleanup mechanism to remove old/inactive sessions periodically.
