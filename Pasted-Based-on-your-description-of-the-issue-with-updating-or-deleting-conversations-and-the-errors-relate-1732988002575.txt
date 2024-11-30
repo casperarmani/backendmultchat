@@ -1,0 +1,90 @@
+Based on your description of the issue with updating or deleting conversations and the errors related to the last_updated timestamp, here are a few things to check and suggestions to help resolve the problem:
+
+1. Ensure Consistent Timestamp Handling
+In your update_conversation_title and delete_conversation functions, you are updating the updated_at field with the current timestamp. Make sure that the timestamp is being set correctly in all places where you update or delete a conversation.
+
+2. Check for Errors in the Supabase Response
+In both update_conversation_title and delete_conversation, you are logging errors but not providing detailed feedback on what went wrong. You can enhance the error handling to log the response from Supabase, which may contain useful information about why the operation failed.
+
+3. Update the updated_at Field
+Make sure that the updated_at field is being updated correctly in your database schema. You might want to ensure that the field is being set to the current timestamp whenever a conversation is updated or deleted.
+
+4. Review the Database Schema
+Ensure that your database schema allows for the updated_at field to be updated. If there are any constraints or triggers that might interfere with this, it could lead to issues.
+
+5. Example of Enhanced Error Handling
+You can modify your update_conversation_title and delete_conversation functions to include more detailed logging:
+
+async def update_conversation_title(conversation_id: uuid.UUID, title: str) 
+-
+>
+ Dict:
+    """Update a conversation's title"""
+    try:
+        response 
+=
+ supabase.table("conversations").update({
+            "title": title,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", str(conversation_id)).
+execute
+()
+        if response.error:
+            logger.error(f"Supabase error updating conversation title: {response.error}")
+            raise ValueError(f"Failed to update conversation title: {response.error.message}")
+        
+return
+ response.data[
+0
+] if response.data 
+else
+ {}
+    
+except
+ Exception 
+as
+ e:
+        logger.error(f"Error updating conversation title: {str(e)}")
+        raise ValueError(f"Failed to update conversation title: {str(e)}")
+async def delete_conversation(conversation_id: uuid.UUID) 
+-
+>
+ bool:
+    """Soft delete a conversation"""
+    try:
+        response 
+=
+ supabase.table("conversations").update({
+            "deleted_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", str(conversation_id)).
+execute
+()
+        if response.error:
+            logger.error(f"Supabase error deleting conversation: {response.error}")
+            
+return
+ 
+False
+
+        
+return
+ bool(response.data)
+    
+except
+ Exception 
+as
+ e:
+        logger.error(f"Error deleting conversation: {str(e)}")
+        
+return
+ 
+False
+6. Check for Middleware or Caching Issues
+If you have any middleware or caching mechanisms in place, ensure that they are not interfering with the updates. Sometimes, stale data can lead to confusion about whether the updates were successful.
+
+7. Test with Direct Database Queries
+If possible, try running direct queries against your Supabase database to see if the updates and deletions work as expected. This can help isolate whether the issue is with the API calls or the database itself.
+
+Conclusion
+By enhancing error handling, ensuring consistent timestamp updates, and checking your database schema, you should be able to identify and resolve the issues you're facing with updating and deleting conversations. If you continue to experience problems, please provide any specific error messages or logs that you encounter,
