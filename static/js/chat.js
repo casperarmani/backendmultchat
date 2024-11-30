@@ -202,6 +202,61 @@ async function switchConversation(conversationId) {
     }
 }
 
+async function renameConversation(conversationId) {
+    try {
+        const conversation = conversations.find(c => c.id === conversationId);
+        if (!conversation) {
+            throw new Error('Conversation not found');
+        }
+
+        const newTitle = prompt('Enter new conversation title:', conversation.title);
+        if (!newTitle || newTitle.trim() === '') {
+            return; // User cancelled or entered empty title
+        }
+
+        const response = await api.updateConversationTitle(conversationId, newTitle);
+        if (response && response.success) {
+            // Update local state
+            conversation.title = newTitle;
+            renderConversations();
+            utils.showSuccess('Conversation renamed successfully');
+        }
+    } catch (error) {
+        console.error('Failed to rename conversation:', error);
+        utils.showError('Failed to rename conversation. Please try again.');
+    }
+}
+
+async function deleteConversation(conversationId) {
+    try {
+        if (!confirm('Are you sure you want to delete this conversation?')) {
+            return;
+        }
+
+        const response = await api.deleteConversation(conversationId);
+        if (response && response.success) {
+            // Remove from local state
+            conversations = conversations.filter(c => c.id !== conversationId);
+            
+            // If the deleted conversation was current, switch to the most recent one
+            if (currentConversationId === conversationId) {
+                currentConversationId = conversations.length > 0 ? conversations[0].id : null;
+                if (currentConversationId) {
+                    await loadConversationMessages(currentConversationId);
+                } else {
+                    chatHistory = [];
+                    renderChatHistory();
+                }
+            }
+            
+            renderConversations();
+            utils.showSuccess('Conversation deleted successfully');
+        }
+    } catch (error) {
+        console.error('Failed to delete conversation:', error);
+        utils.showError('Failed to delete conversation. Please try again.');
+    }
+}
 function renderConversations() {
     const conversationsList = document.getElementById('conversations-list');
     conversationsList.innerHTML = '';
@@ -210,11 +265,41 @@ function renderConversations() {
         const convDiv = document.createElement('div');
         convDiv.className = `conversation-item ${conv.id === currentConversationId ? 'active' : ''}`;
         convDiv.dataset.id = conv.id;
-        convDiv.innerHTML = `
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'conversation-content';
+        contentDiv.innerHTML = `
             <span class="conversation-title">${utils.sanitizeHTML(conv.title)}</span>
             <span class="conversation-date">${utils.formatDate(conv.created_at)}</span>
         `;
-        convDiv.addEventListener('click', () => switchConversation(conv.id));
+        contentDiv.addEventListener('click', () => switchConversation(conv.id));
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'conversation-actions';
+        
+        const renameButton = document.createElement('button');
+        renameButton.className = 'conversation-rename-btn';
+        renameButton.innerHTML = '✏️';
+        renameButton.title = 'Rename conversation';
+        renameButton.onclick = (e) => {
+            e.stopPropagation();
+            renameConversation(conv.id);
+        };
+        
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'conversation-delete-btn';
+        deleteButton.innerHTML = '🗑️';
+        deleteButton.title = 'Delete conversation';
+        deleteButton.onclick = (e) => {
+            e.stopPropagation();
+            deleteConversation(conv.id);
+        };
+        
+        actionsDiv.appendChild(renameButton);
+        actionsDiv.appendChild(deleteButton);
+        
+        convDiv.appendChild(contentDiv);
+        convDiv.appendChild(actionsDiv);
         conversationsList.appendChild(convDiv);
     });
 }

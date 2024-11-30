@@ -60,8 +60,10 @@ const api = {
             method: 'POST',
             body: formData
         });
+        
         if (!response.ok) {
-            throw new Error('Failed to create conversation');
+            const data = await response.json();
+            throw new Error(data.detail || 'Failed to create conversation');
         }
         return response.json();
     },
@@ -69,7 +71,8 @@ const api = {
     async getConversations() {
         const response = await fetch('/conversations');
         if (!response.ok) {
-            throw new Error('Failed to fetch conversations');
+            const data = await response.json();
+            throw new Error(data.detail || 'Failed to fetch conversations');
         }
         return response.json();
     },
@@ -77,7 +80,8 @@ const api = {
     async getConversationMessages(conversationId) {
         const response = await fetch(`/conversations/${conversationId}/messages`);
         if (!response.ok) {
-            throw new Error('Failed to fetch conversation messages');
+            const data = await response.json();
+            throw new Error(data.detail || 'Failed to fetch conversation messages');
         }
         return response.json();
     },
@@ -99,29 +103,57 @@ const api = {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to send message');
+            const data = await response.json();
+            throw new Error(data.detail || 'Failed to send message');
         }
 
         return response.json();
     },
 
     async updateConversationTitle(conversationId, title) {
-        const formData = new FormData();
-        formData.append('title', title);
-        const response = await fetch(`/conversations/${conversationId}`, {
-            method: 'PUT',
-            body: formData
-        });
-        if (!response.ok) {
-            throw new Error('Failed to update conversation title');
+        try {
+            const formData = new FormData();
+            formData.append('title', title);
+            const response = await fetch(`/conversations/${conversationId}`, {
+                method: 'PUT',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to update conversation title');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating conversation title:', error);
+            throw error;
         }
-        return response.json();
+    },
+
+    async deleteConversation(conversationId) {
+        try {
+            const response = await fetch(`/conversations/${conversationId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to delete conversation');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error deleting conversation:', error);
+            throw error;
+        }
     },
 
     async getChatHistory() {
         const response = await fetch('/chat_history');
         if (!response.ok) {
-            throw new Error('Failed to fetch chat history');
+            const data = await response.json();
+            throw new Error(data.detail || 'Failed to fetch chat history');
         }
         return response.json();
     },
@@ -129,7 +161,8 @@ const api = {
     async getVideoAnalysisHistory() {
         const response = await fetch('/video_analysis_history');
         if (!response.ok) {
-            throw new Error('Failed to fetch video analysis history');
+            const data = await response.json();
+            throw new Error(data.detail || 'Failed to fetch video analysis history');
         }
         return response.json();
     },
