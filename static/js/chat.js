@@ -183,36 +183,18 @@ async function fetchNewMessages() {
 }
 
 function addMessageToHistory(message) {
-    chatHistory.push(message);
-    renderMessage(message);
-    
-    // Update last message timestamp
-    const messageTimestamp = new Date(message.TIMESTAMP);
-    if (!lastMessageTimestamp || messageTimestamp > new Date(lastMessageTimestamp)) {
-        lastMessageTimestamp = message.TIMESTAMP;
-    }
-}
-
-function renderMessage(message) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${message.chat_type}`;
-    const formattedDate = utils.formatDate(message.TIMESTAMP);
-    
-    messageDiv.innerHTML = `
-        <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
-        <div class="message-timestamp" data-timestamp="${message.TIMESTAMP}" title="${formattedDate}">${formattedDate}</div>
-    `;
-    
-    // Add to DOM and observe for lazy loading
-    messageDiv.style.opacity = '0';
-    chatHistoryContainer.appendChild(messageDiv);
-    messageObserver.observe(messageDiv);
-    
-    // Scroll to bottom if user was at bottom
-    if (chatHistoryContainer.scrollHeight - chatHistoryContainer.scrollTop <= chatHistoryContainer.clientHeight + 100) {
-        requestAnimationFrame(() => {
-            chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
-        });
+    // Only add to history if message doesn't already exist
+    if (!chatHistory.some(m => m.TIMESTAMP === message.TIMESTAMP)) {
+        chatHistory.push(message);
+        
+        // Update last message timestamp
+        const messageTimestamp = new Date(message.TIMESTAMP);
+        if (!lastMessageTimestamp || messageTimestamp > new Date(lastMessageTimestamp)) {
+            lastMessageTimestamp = message.TIMESTAMP;
+        }
+        
+        // Trigger a single render
+        renderChatHistory();
     }
 }
 
