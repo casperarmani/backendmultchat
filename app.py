@@ -39,18 +39,53 @@ from session_config import (
     SESSION_CLEANUP_INTERVAL
 )
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging with colors and formatting
+logging.basicConfig(
+    level=logging.INFO,
+    format='\033[32m[%(asctime)s] %(levelname)s:\033[0m %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
-# Suppress logs for polling endpoints
-logging.getLogger("uvicorn.access").handlers = []
+# Custom formatter for colored logs
+class ColoredFormatter(logging.Formatter):
+    green = "\033[32m"
+    grey = "\033[37m"
+    yellow = "\033[33m"
+    red = "\033[31m"
+    bold_red = "\033[31;1m"
+    reset = "\033[0m"
+    format_str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+    FORMATS = {
+        logging.DEBUG: grey + format_str + reset,
+        logging.INFO: green + format_str + reset,
+        logging.WARNING: yellow + format_str + reset,
+        logging.ERROR: red + format_str + reset,
+        logging.CRITICAL: bold_red + format_str + reset
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt, datefmt='%Y-%m-%d %H:%M:%S')
+        return formatter.format(record)
+
+# Suppress logs for polling endpoints while keeping format for others
 class EndpointFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         return not (
             "GET /conversations/" in record.getMessage() and 
             "/messages" in record.getMessage()
         )
-logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+
+# Apply custom formatting to logger
+handler = logging.StreamHandler()
+handler.setFormatter(ColoredFormatter())
+logging.getLogger().handlers = [handler]
+
+# Apply filter to access logs
+uvicorn_access = logging.getLogger("uvicorn.access")
+uvicorn_access.addFilter(EndpointFilter())
 
 load_dotenv()
 
