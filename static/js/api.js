@@ -123,16 +123,16 @@ const api = {
                 body: formData
             });
             
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.detail || 'Failed to update conversation title');
+            const data = await response.json();
+            
+            if (data.detail) {
+                throw new Error(data.detail);
             }
             
-            const result = await response.json();
-            return result;
+            return data;
         } catch (error) {
             console.error('Error updating conversation title:', error);
-            throw new Error(error.message || 'Failed to update conversation. Please try again.');
+            throw error;
         }
     },
 
@@ -146,16 +146,16 @@ const api = {
                 method: 'DELETE'
             });
             
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.detail || 'Failed to delete conversation');
+            const data = await response.json();
+            
+            if (data.detail) {
+                throw new Error(data.detail);
             }
             
-            const result = await response.json();
-            return result;
+            return data;
         } catch (error) {
             console.error('Error deleting conversation:', error);
-            throw new Error(error.message || 'Failed to delete conversation. Please try again.');
+            throw error;
         }
     },
 

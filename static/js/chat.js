@@ -221,9 +221,12 @@ async function renameConversation(conversationId) {
         }
 
         const response = await api.updateConversationTitle(conversationId, newTitle);
-        if (response && response.success) {
-            // Update local state
-            conversation.title = newTitle.trim();
+        if (response && response.conversation) {
+            // Update local state with the response data
+            const index = conversations.findIndex(c => c.id === conversationId);
+            if (index !== -1) {
+                conversations[index] = response.conversation;
+            }
             renderConversations();
             utils.showSuccess('Conversation renamed successfully');
         }
@@ -246,7 +249,7 @@ async function deleteConversation(conversationId) {
         }
 
         const response = await api.deleteConversation(conversationId);
-        if (response && response.success) {
+        if (response && response.success === true) {
             // Remove from local state
             conversations = conversations.filter(c => c.id !== conversationId);
             
