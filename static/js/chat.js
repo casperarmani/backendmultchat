@@ -80,7 +80,8 @@ async function initChat() {
                 message: message,
                 chat_type: 'user',
                 TIMESTAMP: timestamp,
-                conversation_id: currentConversationId
+                conversation_id: currentConversationId,
+                is_local: true  // Add this flag to identify locally added messages
             };
             
             // Add to chat history and render
@@ -171,13 +172,20 @@ async function fetchNewMessages() {
         );
         
         if (response && Array.isArray(response.messages)) {
-            // More robust deduplication using both timestamp and message content
             const newMessages = response.messages.filter(msg => {
-                const isDuplicate = chatHistory.some(existing => 
+                // For user messages, check if we have a local version
+                if (msg.chat_type === 'user') {
+                    const isDuplicate = chatHistory.some(existing => 
+                        (existing.is_local && existing.message === msg.message) || // Check local messages
+                        (existing.TIMESTAMP === msg.TIMESTAMP && existing.message === msg.message)
+                    );
+                    return !isDuplicate;
+                }
+                // For other messages, use normal deduplication
+                return !chatHistory.some(existing => 
                     existing.TIMESTAMP === msg.TIMESTAMP && 
                     existing.message === msg.message
                 );
-                return !isDuplicate;
             });
             
             if (newMessages.length > 0) {
@@ -196,11 +204,14 @@ async function fetchNewMessages() {
 function addMessageToHistory(message) {
     if (!message || !message.TIMESTAMP || !message.message) return;
     
-    const isDuplicate = chatHistory.some(m => 
-        m.TIMESTAMP === message.TIMESTAMP && 
-        m.message === message.message &&
-        m.chat_type === message.chat_type
-    );
+    const isDuplicate = chatHistory.some(m => {
+        if (message.is_local && m.is_local) {
+            return m.message === message.message && m.chat_type === message.chat_type;
+        }
+        return m.TIMESTAMP === message.TIMESTAMP && 
+               m.message === message.message && 
+               m.chat_type === message.chat_type;
+    });
     
     if (!isDuplicate) {
         chatHistory.push(message);
