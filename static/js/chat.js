@@ -225,11 +225,12 @@ function startPolling(interval) {
                 }
             }
         } catch (error) {
-            // Log all errors except routine polling messages
+            // Only log critical errors, not routine polling messages
             if (error.message && 
                 !error.message.includes('No new messages') && 
-                !error.message.includes('polling timeout')) {
-                console.error('Error polling for messages:', error);
+                !error.message.includes('polling timeout') &&
+                !error.message.includes('conversation not found')) {
+                console.error('Critical error:', error.message);
             }
         } finally {
             isPolling = false;
@@ -275,11 +276,8 @@ async function fetchNewMessages() {
         if (!error.message?.includes('No new messages') && 
             !error.message?.includes('polling timeout') &&
             !error.message?.includes('conversation not found')) {
-            console.error('API Error:', {
-                endpoint: 'fetchNewMessages',
-                conversationId: currentConversationId,
-                error: error.message || 'Unknown error'
-            });
+            // Only log real API failures, not expected polling responses
+            console.error('API Error:', error.message || 'Unknown error');
         }
         throw error;
     }
