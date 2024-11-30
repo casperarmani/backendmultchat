@@ -39,10 +39,11 @@ class RedisManager:
     def __init__(self, redis_url: str):
         self.pool = ConnectionPool.from_url(
             url=redis_url,
-            max_connections=10,
+            max_connections=50,
             socket_timeout=5.0,
             socket_connect_timeout=2.0,
-            retry_on_timeout=True
+            retry_on_timeout=True,
+            health_check_interval=30
         )
         
         self.redis = redis.Redis(connection_pool=self.pool)
