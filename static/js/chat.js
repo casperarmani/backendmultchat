@@ -9,10 +9,10 @@ window.messageObserver = null;
 window.lastMessageTimestamp = null;
 window.retryCount = 0;
 const MAX_RETRIES = 3;
-const INITIAL_POLL_INTERVAL = 500; // Faster initial polling
-const MAX_POLL_INTERVAL = 5000;    // Shorter maximum interval
+const INITIAL_POLL_INTERVAL = 1000;
+const MAX_POLL_INTERVAL = 3000;
 const BATCH_SIZE = 20;
-const RETRY_DELAY = 500;           // Faster retry
+const RETRY_DELAY = 1000;
 
 // File upload handling
 let selectedFiles = new Set();
