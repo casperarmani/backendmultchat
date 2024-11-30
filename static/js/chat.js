@@ -206,30 +206,42 @@ async function renameConversation(conversationId) {
     try {
         const conversation = conversations.find(c => c.id === conversationId);
         if (!conversation) {
-            throw new Error('Conversation not found');
+            utils.showError('Conversation not found');
+            return;
         }
 
         const newTitle = prompt('Enter new conversation title:', conversation.title);
-        if (!newTitle || newTitle.trim() === '') {
-            return; // User cancelled or entered empty title
+        if (!newTitle) {
+            return; // User cancelled
+        }
+
+        if (!newTitle.trim()) {
+            utils.showError('Title cannot be empty');
+            return;
         }
 
         const response = await api.updateConversationTitle(conversationId, newTitle);
         if (response && response.success) {
             // Update local state
-            conversation.title = newTitle;
+            conversation.title = newTitle.trim();
             renderConversations();
             utils.showSuccess('Conversation renamed successfully');
         }
     } catch (error) {
         console.error('Failed to rename conversation:', error);
-        utils.showError('Failed to rename conversation. Please try again.');
+        utils.showError(error.message || 'Failed to rename conversation. Please try again.');
     }
 }
 
 async function deleteConversation(conversationId) {
     try {
-        if (!confirm('Are you sure you want to delete this conversation?')) {
+        const conversation = conversations.find(c => c.id === conversationId);
+        if (!conversation) {
+            utils.showError('Conversation not found');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to delete "${conversation.title}"? This action cannot be undone.`)) {
             return;
         }
 
@@ -254,7 +266,10 @@ async function deleteConversation(conversationId) {
         }
     } catch (error) {
         console.error('Failed to delete conversation:', error);
-        utils.showError('Failed to delete conversation. Please try again.');
+        utils.showError(error.message || 'Failed to delete conversation. Please try again.');
+        
+        // Refresh conversations list to ensure consistency
+        await loadConversations();
     }
 }
 function renderConversations() {

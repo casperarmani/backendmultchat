@@ -112,8 +112,12 @@ const api = {
 
     async updateConversationTitle(conversationId, title) {
         try {
+            if (!title || !title.trim()) {
+                throw new Error('Title cannot be empty');
+            }
+
             const formData = new FormData();
-            formData.append('title', title);
+            formData.append('title', title.trim());
             const response = await fetch(`/conversations/${conversationId}`, {
                 method: 'PUT',
                 body: formData
@@ -124,15 +128,20 @@ const api = {
                 throw new Error(data.detail || 'Failed to update conversation title');
             }
             
-            return await response.json();
+            const result = await response.json();
+            return result;
         } catch (error) {
             console.error('Error updating conversation title:', error);
-            throw error;
+            throw new Error(error.message || 'Failed to update conversation. Please try again.');
         }
     },
 
     async deleteConversation(conversationId) {
         try {
+            if (!conversationId) {
+                throw new Error('Invalid conversation ID');
+            }
+
             const response = await fetch(`/conversations/${conversationId}`, {
                 method: 'DELETE'
             });
@@ -142,10 +151,11 @@ const api = {
                 throw new Error(data.detail || 'Failed to delete conversation');
             }
             
-            return await response.json();
+            const result = await response.json();
+            return result;
         } catch (error) {
             console.error('Error deleting conversation:', error);
-            throw error;
+            throw new Error(error.message || 'Failed to delete conversation. Please try again.');
         }
     },
 
