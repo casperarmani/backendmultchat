@@ -14,12 +14,74 @@ const MAX_POLL_INTERVAL = 10000;
 const BATCH_SIZE = 20;
 const RETRY_DELAY = 1000;
 
+// File upload handling
+let selectedFiles = new Set();
+
+function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    const uploadPreview = document.querySelector('.upload-preview') || createUploadPreview();
+    
+    files.forEach(file => {
+        if (!selectedFiles.has(file)) {
+            selectedFiles.add(file);
+            const fileItem = createFilePreviewItem(file);
+            uploadPreview.appendChild(fileItem);
+        }
+    });
+    
+    updateUploadStatus();
+}
+
+function createUploadPreview() {
+    const uploadContainer = document.querySelector('.upload-container');
+    const previewDiv = document.createElement('div');
+    previewDiv.className = 'upload-preview';
+    uploadContainer.appendChild(previewDiv);
+    return previewDiv;
+}
+
+function createFilePreviewItem(file) {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'file-item';
+    
+    const fileName = document.createElement('span');
+    fileName.className = 'file-name';
+    fileName.textContent = file.name;
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-file';
+    removeBtn.innerHTML = '×';
+    removeBtn.onclick = () => removeFile(file, fileItem);
+    
+    fileItem.appendChild(fileName);
+    fileItem.appendChild(removeBtn);
+    return fileItem;
+}
+
+function removeFile(file, fileItem) {
+    selectedFiles.delete(file);
+    fileItem.remove();
+    updateUploadStatus();
+}
+
+function updateUploadStatus() {
+    const uploadStatus = document.getElementById('upload-status');
+    if (selectedFiles.size > 0) {
+        uploadStatus.textContent = `${selectedFiles.size} file(s) selected`;
+        uploadStatus.className = 'upload-status';
+    } else {
+        uploadStatus.textContent = '';
+    }
+}
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
     const videoUpload = document.getElementById('video-upload');
     const uploadStatus = document.getElementById('upload-status');
     window.chatHistoryContainer = document.getElementById('chat-history');
+    
+    // Set up file upload handling
+    videoUpload.addEventListener('change', handleFileSelect);
 
     // Initialize IntersectionObserver for lazy loading
     initializeMessageObserver();
@@ -53,7 +115,7 @@ async function initChat() {
         e.preventDefault();
         
         const message = messageInput.value.trim();
-        const videos = Array.from(videoUpload.files);
+        const videos = Array.from(selectedFiles);
         
         if (!message && !videos.length) {
             return;
@@ -72,6 +134,12 @@ async function initChat() {
             // Clear inputs
             messageInput.value = '';
             videoUpload.value = '';
+            selectedFiles.clear();
+            const uploadPreview = document.querySelector('.upload-preview');
+            if (uploadPreview) {
+                uploadPreview.innerHTML = '';
+            }
+            updateUploadStatus();
             uploadStatus.textContent = '';
 
             // Add user message to UI immediately

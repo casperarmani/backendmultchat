@@ -228,19 +228,79 @@ button:hover {
 
 .upload-container {
     margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .upload-label {
     display: inline-block;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.5rem;
     background-color: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.upload-label:hover {
+    border-color: #007bff;
+    background-color: #e3f2fd;
 }
 
 .upload-label input[type="file"] {
     display: none;
+}
+
+.upload-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.file-item .file-name {
+    margin-right: 0.5rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-item .remove-file {
+    cursor: pointer;
+    color: #dc3545;
+    border: none;
+    background: none;
+    padding: 0.25rem;
+}
+
+.upload-status {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.upload-status.uploading {
+    background-color: #e3f2fd;
+    color: #0056b3;
+}
+
+.upload-status.error {
+    background-color: #f8d7da;
+    color: #dc3545;
 }
 
 .message-container {
