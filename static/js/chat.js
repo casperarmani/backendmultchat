@@ -10,7 +10,7 @@ window.lastMessageTimestamp = null;
 window.retryCount = 0;
 const MAX_RETRIES = 3;
 const INITIAL_POLL_INTERVAL = 1000;
-const MAX_POLL_INTERVAL = 3000;
+const MAX_POLL_INTERVAL = 10000;
 const BATCH_SIZE = 20;
 const RETRY_DELAY = 1000;
 
@@ -205,29 +205,27 @@ function startPolling(interval) {
             const newMessages = await fetchNewMessages();
             
             if (newMessages?.length > 0) {
-                // Process messages immediately
-                chatHistory = [...chatHistory, ...newMessages];
-                lastMessageTimestamp = newMessages[newMessages.length - 1].TIMESTAMP;
-                renderChatHistory();
+                const uniqueMessages = newMessages.filter(msg => 
+                    !chatHistory.some(existing => 
+                        existing.TIMESTAMP === msg.TIMESTAMP && 
+                        existing.message === msg.message
+                    )
+                );
                 
-                // If we got a response, increase polling frequency temporarily
-                if (interval > INITIAL_POLL_INTERVAL) {
-                    clearInterval(currentPollInterval);
-                    startPolling(INITIAL_POLL_INTERVAL);
-                }
-            } else {
-                // If no new messages, gradually increase polling interval
-                if (interval < MAX_POLL_INTERVAL) {
-                    clearInterval(currentPollInterval);
-                    startPolling(Math.min(interval * 1.5, MAX_POLL_INTERVAL));
+                if (uniqueMessages.length > 0) {
+                    chatHistory = [...chatHistory, ...uniqueMessages];
+                    lastMessageTimestamp = uniqueMessages[uniqueMessages.length - 1].TIMESTAMP;
+                    renderChatHistory();
                 }
             }
         } catch (error) {
-            if (!error.message?.includes('No new messages') && 
-                !error.message?.includes('polling timeout') && 
-                !error.message?.includes('conversation not found') &&
-                !error.message?.includes('Network request failed')) {
-                console.error('Polling error:', error);
+            // Silently handle polling errors
+            if (error.name === 'AbortError' || 
+                error.message?.includes('No new messages') || 
+                error.message?.includes('polling timeout') || 
+                error.message?.includes('conversation not found') ||
+                error.message?.includes('Network request failed')) {
+                return;
             }
         } finally {
             isPolling = false;
@@ -241,17 +239,15 @@ async function fetchNewMessages() {
         const response = await api.getConversationMessages(currentConversationId);
         if (response && Array.isArray(response.messages)) {
             const newMessages = response.messages.filter(msg => {
-                // For user messages, check if we already have it locally or by timestamp
                 if (msg.chat_type === 'user') {
                     return !chatHistory.some(existing => 
-                        (existing.is_local && existing.message === msg.message && existing.chat_type === msg.chat_type) || 
-                        existing.TIMESTAMP === msg.TIMESTAMP
+                        (existing.is_local && existing.message === msg.message) || 
+                        (existing.TIMESTAMP === msg.TIMESTAMP && existing.message === msg.message)
                     );
                 }
-                // For bot messages, ensure we don't have it by timestamp or exact match
                 return !chatHistory.some(existing => 
-                    existing.TIMESTAMP === msg.TIMESTAMP || 
-                    (existing.message === msg.message && existing.chat_type === msg.chat_type)
+                    existing.TIMESTAMP === msg.TIMESTAMP && 
+                    existing.message === msg.message
                 );
             });
             
@@ -276,15 +272,12 @@ function addMessageToHistory(message) {
     if (!message || !message.TIMESTAMP || !message.message) return;
     
     const isDuplicate = chatHistory.some(m => {
-        // For local messages, check content and type
         if (message.is_local && m.is_local) {
-            return m.message === message.message && 
-                   m.chat_type === message.chat_type;
+            return m.message === message.message && m.chat_type === message.chat_type;
         }
-        // For server messages, check timestamp or exact content match
-        return m.TIMESTAMP === message.TIMESTAMP || 
-               (m.message === message.message && 
-                m.chat_type === message.chat_type);
+        return m.TIMESTAMP === message.TIMESTAMP && 
+               m.message === message.message && 
+               m.chat_type === message.chat_type;
     });
     
     if (!isDuplicate) {

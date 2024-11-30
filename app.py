@@ -85,13 +85,9 @@ handler = logging.StreamHandler()
 handler.setFormatter(ColoredFormatter())
 logging.getLogger().handlers = [handler]
 
-# Apply filter to access logs and FastAPI logs
+# Apply filter to access logs
 uvicorn_access = logging.getLogger("uvicorn.access")
 uvicorn_access.addFilter(EndpointFilter())
-
-# Add filter to FastAPI logger
-fastapi_logger = logging.getLogger("fastapi")
-fastapi_logger.addFilter(EndpointFilter())
 
 load_dotenv()
 
