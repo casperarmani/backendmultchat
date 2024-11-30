@@ -209,7 +209,7 @@ function startPolling(interval) {
             isPolling = true;
             
             // Health check log - controlled via localStorage or window.DEBUG flag
-            const isDevelopment = window.DEBUG || localStorage.getItem('DEBUG');
+            const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
             if (isDevelopment) {
                 console.debug('Health check: Polling for new messages');
             }
@@ -272,7 +272,7 @@ async function fetchNewMessages() {
                 const latestMessage = newMessages[newMessages.length - 1];
                 lastMessageTimestamp = latestMessage.TIMESTAMP;
                 // Only log new message arrival for debugging purposes
-                const isDevelopment = window.DEBUG || localStorage.getItem('DEBUG');
+                const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
                 if (isDevelopment) {
                     console.log(`Received ${newMessages.length} new messages`);
                 }
@@ -359,7 +359,7 @@ async function switchConversation(conversationId) {
         }
     } catch (error) {
         // Only log detailed error for debugging
-        const isDevelopment = window.DEBUG || localStorage.getItem('DEBUG');
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
         if (isDevelopment) {
             console.error('Conversation switch error details:', error);
         }
@@ -574,7 +574,7 @@ async function renameConversation(conversationId) {
         }
     } catch (error) {
         // Only log error details in development
-        const isDevelopment = window.DEBUG || localStorage.getItem('DEBUG');
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
         if (isDevelopment) {
             console.error('Conversation rename error details:', error);
         }
@@ -614,7 +614,7 @@ async function deleteConversation(conversationId) {
         }
     } catch (error) {
         // Only log detailed error in development
-        const isDevelopment = window.DEBUG || localStorage.getItem('DEBUG');
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
         if (isDevelopment) {
             console.error('Conversation deletion error details:', error);
         }
