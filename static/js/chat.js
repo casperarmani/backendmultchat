@@ -9,17 +9,10 @@ window.messageObserver = null;
 window.lastMessageTimestamp = null;
 window.retryCount = 0;
 const MAX_RETRIES = 3;
-const INITIAL_POLL_INTERVAL = 2000;
-const MAX_POLL_INTERVAL = 30000;
-const BATCH_SIZE = 50;
+const INITIAL_POLL_INTERVAL = 1000;
+const MAX_POLL_INTERVAL = 10000;
+const BATCH_SIZE = 20;
 const RETRY_DELAY = 1000;
-const MAX_MESSAGES_IN_DOM = 200;
-const MESSAGE_CACHE_KEY = 'chat_message_cache';
-let currentController = null;
-let lastUserActivity = Date.now();
-let currentPollDelay = INITIAL_POLL_INTERVAL;
-// Make messageCache re-assignable
-let messageCache = new WeakMap();
 
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
@@ -132,15 +125,7 @@ function resetPolling() {
     if (currentPollInterval) {
         clearInterval(currentPollInterval);
     }
-    currentPollDelay = INITIAL_POLL_INTERVAL;
-    startPolling(currentPollDelay);
-}
-
-function updateUserActivity() {
-    lastUserActivity = Date.now();
-    if (currentPollDelay !== INITIAL_POLL_INTERVAL) {
-        resetPolling();
-    }
+    startPolling(INITIAL_POLL_INTERVAL);
 }
 
 function startPolling(interval) {
@@ -167,27 +152,7 @@ function startPolling(interval) {
                 if (uniqueMessages.length > 0) {
                     chatHistory = [...chatHistory, ...uniqueMessages];
                     lastMessageTimestamp = uniqueMessages[uniqueMessages.length - 1].TIMESTAMP;
-                    
-                    // Cache messages
-                    try {
-                        localStorage.setItem(MESSAGE_CACHE_KEY, JSON.stringify({
-                            timestamp: Date.now(),
-                            messages: chatHistory.slice(-MAX_MESSAGES_IN_DOM)
-                        }));
-                    } catch (e) {
-                        console.warn('Failed to cache messages:', e);
-                    }
-                    
                     renderChatHistory();
-                }
-            }
-            
-            // Implement exponential backoff if no user activity
-            if (Date.now() - lastUserActivity > 30000) {
-                currentPollDelay = Math.min(currentPollDelay * 2, MAX_POLL_INTERVAL);
-                if (currentPollDelay !== interval) {
-                    startPolling(currentPollDelay);
-                    return;
                 }
             }
         } catch (error) {
@@ -199,30 +164,11 @@ function startPolling(interval) {
 }
 
 async function fetchNewMessages() {
-    if (currentController) {
-        currentController.abort();
-    }
-    currentController = new AbortController();
-    
     const timestamp = lastMessageTimestamp || new Date(0).toISOString();
     try {
-        // Try to get cached messages first
-        const cachedData = localStorage.getItem(MESSAGE_CACHE_KEY);
-        if (cachedData) {
-            const { timestamp: cacheTimestamp, messages } = JSON.parse(cachedData);
-            if (Date.now() - cacheTimestamp < 5000) { // Cache valid for 5 seconds
-                return messages;
-            }
-        }
-        
-        const headers = {
-            'If-Modified-Since': timestamp
-        };
-        
         const response = await api.getConversationMessages(
             currentConversationId,
-            { since: timestamp },
-            { signal: currentController.signal, headers }
+            { since: timestamp }
         );
         
         if (response && Array.isArray(response.messages)) {
@@ -278,12 +224,6 @@ function addMessageToHistory(message) {
 }
 
 function cleanupChat() {
-    // Abort any pending requests
-    if (currentController) {
-        currentController.abort();
-        currentController = null;
-    }
-    
     // Clear existing intervals
     if (currentPollInterval) {
         clearInterval(currentPollInterval);
@@ -295,35 +235,15 @@ function cleanupChat() {
         messageObserver.disconnect();
     }
     
-    // Clear event listeners from message elements
-    if (chatHistoryContainer) {
-        const messageElements = chatHistoryContainer.getElementsByClassName('message');
-        Array.from(messageElements).forEach(element => {
-            const clone = element.cloneNode(true);
-            element.parentNode.replaceChild(clone, element);
-        });
-    }
-    
     // Clear chat history and reset timestamps
     chatHistory = [];
     lastMessageTimestamp = null;
     retryCount = 0;
-    currentPollDelay = INITIAL_POLL_INTERVAL;
     
     // Clear DOM
     if (chatHistoryContainer) {
         chatHistoryContainer.innerHTML = '';
     }
-    
-    // Clear message cache
-    try {
-        localStorage.removeItem(MESSAGE_CACHE_KEY);
-    } catch (e) {
-        console.warn('Failed to clear message cache:', e);
-    }
-    
-    // Reset message cache
-    messageCache = new WeakMap();
 }
 
 async function switchConversation(conversationId) {
@@ -421,66 +341,38 @@ function renderChatHistory() {
     const wasScrolledToBottom = chatHistoryContainer.scrollHeight - chatHistoryContainer.scrollTop 
         <= chatHistoryContainer.clientHeight + 10;
     
-    // Cleanup old messages if exceeding limit
-    if (chatHistory.length > MAX_MESSAGES_IN_DOM) {
-        chatHistory = chatHistory.slice(-MAX_MESSAGES_IN_DOM);
-    }
-    
     chatHistoryContainer.innerHTML = '';
     const sortedMessages = [...chatHistory].sort((a, b) => 
         new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP)
     );
     
-    // Process messages in batches
     const fragment = document.createDocumentFragment();
-    const totalBatches = Math.ceil(sortedMessages.length / BATCH_SIZE);
-    let currentBatch = 0;
     
-    function processBatch() {
-        const start = currentBatch * BATCH_SIZE;
-        const end = Math.min(start + BATCH_SIZE, sortedMessages.length);
-        const batchFragment = document.createDocumentFragment();
+    sortedMessages.forEach(message => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.chat_type}`;
+        const formattedDate = utils.formatDate(message.TIMESTAMP);
+        
+        messageDiv.innerHTML = `
+            <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
+            <div class="message-timestamp" data-timestamp="${message.TIMESTAMP}" title="${formattedDate}">${formattedDate}</div>
+        `;
+        
+        fragment.appendChild(messageDiv);
+        
+        if (messageObserver) {
+            messageObserver.observe(messageDiv);
+        }
+    });
     
-    for (let i = start; i < end; i++) {
-            const message = sortedMessages[i];
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${message.chat_type}`;
-            messageDiv.style.contain = 'content';  // Add CSS containment
-            const formattedDate = utils.formatDate(message.TIMESTAMP);
-            
-            messageDiv.innerHTML = `
-                <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
-                <div class="message-timestamp" data-timestamp="${message.TIMESTAMP}" title="${formattedDate}">${formattedDate}</div>
-            `;
-            
-            // Store message reference in WeakMap for garbage collection
-            messageCache.set(messageDiv, message);
-            
-            batchFragment.appendChild(messageDiv);
-            
-            if (messageObserver) {
-                messageObserver.observe(messageDiv);
-            }
-        }
-        
-        fragment.appendChild(batchFragment);
-        currentBatch++;
-        
-        if (currentBatch < totalBatches) {
-            requestAnimationFrame(processBatch);
-        } else {
-            chatHistoryContainer.appendChild(fragment);
-            
-            // Only scroll if we were already at bottom or if this is a new message
-            if (wasScrolledToBottom || sortedMessages[sortedMessages.length - 1]?.TIMESTAMP === lastMessageTimestamp) {
-                requestAnimationFrame(() => {
-                    chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
-                });
-            }
-        }
+    chatHistoryContainer.appendChild(fragment);
+    
+    // Only scroll if we were already at bottom or if this is a new message
+    if (wasScrolledToBottom || sortedMessages[sortedMessages.length - 1]?.TIMESTAMP === lastMessageTimestamp) {
+        requestAnimationFrame(() => {
+            chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
+        });
     }
-    
-    requestAnimationFrame(processBatch);
 }
 
 function renderConversations() {
