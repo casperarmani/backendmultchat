@@ -224,7 +224,12 @@ function startPolling(interval) {
                 }
             }
         } catch (error) {
-            console.error('Error polling for messages:', error);
+            // Only log critical errors, ignore routine polling messages
+            if (error.message && 
+                !error.message.includes('No new messages') && 
+                !error.message.includes('polling timeout')) {
+                console.error('Critical polling error:', error.message);
+            }
         } finally {
             isPolling = false;
         }
@@ -337,7 +342,10 @@ async function switchConversation(conversationId) {
             messageInput.value = '';
         }
     } catch (error) {
-        console.error('Error switching conversation:', error);
+        // Only log detailed error for debugging
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Conversation switch error details:', error);
+        }
         utils.showError('Failed to switch conversation. Please try again.');
     }
 }
@@ -548,7 +556,10 @@ async function renameConversation(conversationId) {
             renderConversations();
         }
     } catch (error) {
-        console.error('Failed to rename conversation:', error);
+        // Only log error details in development
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Conversation rename error details:', error);
+        }
         utils.showError(error.message || 'Failed to rename conversation. Please try again.');
     }
 }
@@ -584,7 +595,10 @@ async function deleteConversation(conversationId) {
             renderConversations();
         }
     } catch (error) {
-        console.error('Failed to delete conversation:', error);
+        // Only log detailed error in development
+        if (process.env.NODE_ENV === 'development') {
+            console.error('Conversation deletion error details:', error);
+        }
         utils.showError(error.message || 'Failed to delete conversation. Please try again.');
         
         // Refresh conversations list to ensure consistency
