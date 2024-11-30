@@ -145,6 +145,7 @@ async def update_conversation_title(conversation_id: uuid.UUID, title: str) -> D
         # Update the conversation
         response = supabase.table("conversations").update({
             "title": title,
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", str(conversation_id)).execute()
 
         if not response.data:
