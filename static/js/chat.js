@@ -73,6 +73,7 @@ function updateUploadStatus() {
         uploadStatus.textContent = '';
     }
 }
+
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
@@ -80,13 +81,9 @@ async function initChat() {
     const uploadStatus = document.getElementById('upload-status');
     window.chatHistoryContainer = document.getElementById('chat-history');
     
-    // Set up file upload handling
     videoUpload.addEventListener('change', handleFileSelect);
-
-    // Initialize IntersectionObserver for lazy loading
     initializeMessageObserver();
 
-    // Add conversation container to the chat interface
     const conversationsContainer = document.createElement('div');
     conversationsContainer.className = 'conversations-container';
     conversationsContainer.innerHTML = `
@@ -98,17 +95,18 @@ async function initChat() {
     `;
     chatHistoryContainer.parentElement.insertBefore(conversationsContainer, chatHistoryContainer);
 
-    // Setup event listeners
     document.getElementById('new-conversation-btn').addEventListener('click', createNewConversation);
 
-    // Load initial data
     try {
         await Promise.all([
             loadConversations(),
             loadAnalysisHistory()
         ]);
     } catch (error) {
-        console.error('Error loading initial data:', error);
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+        if (isDevelopment) {
+            console.error('Error loading initial data:', error);
+        }
     }
 
     chatForm.addEventListener('submit', async (e) => {
@@ -131,7 +129,6 @@ async function initChat() {
 
             const response = await api.sendMessage(message, videos, currentConversationId);
             
-            // Clear inputs
             messageInput.value = '';
             videoUpload.value = '';
             selectedFiles.clear();
@@ -142,29 +139,27 @@ async function initChat() {
             updateUploadStatus();
             uploadStatus.textContent = '';
 
-            // Add user message to UI immediately
             const timestamp = new Date().toISOString();
             const userMessage = {
                 message: message,
                 chat_type: 'user',
                 TIMESTAMP: timestamp,
                 conversation_id: currentConversationId,
-                is_local: true  // Add this flag to identify locally added messages
+                is_local: true
             };
             
-            // Add to chat history and render
             addMessageToHistory(userMessage);
-            
-            // Reset polling interval and start immediate polling
             resetPolling();
             
-            // Only reload analysis history if videos were uploaded
             if (videos && videos.length > 0) {
                 await loadAnalysisHistory();
             }
         } catch (error) {
             utils.showError('Failed to send message');
-            console.error('Error sending message:', error);
+            const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+            if (isDevelopment) {
+                console.error('Error sending message:', error);
+            }
         } finally {
             messageInput.disabled = false;
         }
@@ -207,7 +202,7 @@ function startPolling(interval) {
         
         try {
             isPolling = true;
-            const newMessages = await fetchNewMessages().catch(() => []);
+            const newMessages = await fetchNewMessages();
             
             if (newMessages?.length > 0) {
                 const uniqueMessages = newMessages.filter(msg => 
@@ -224,13 +219,14 @@ function startPolling(interval) {
                 }
             }
         } catch (error) {
-            // Only log critical system errors
-            if (error.name !== 'AbortError' && 
+            const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+            if (isDevelopment && 
+                error.name !== 'AbortError' && 
                 !error.message?.includes('No new messages') && 
                 !error.message?.includes('polling timeout') && 
                 !error.message?.includes('conversation not found') &&
                 !error.message?.includes('Network request failed')) {
-                console.error('System Error:', error.message);
+                console.error('Critical polling error:', error.message || 'Unknown error');
             }
         } finally {
             isPolling = false;
@@ -241,22 +237,15 @@ function startPolling(interval) {
 async function fetchNewMessages() {
     const timestamp = lastMessageTimestamp || new Date(0).toISOString();
     try {
-        const response = await api.getConversationMessages(
-            currentConversationId,
-            { since: timestamp }
-        );
-        
+        const response = await api.getConversationMessages(currentConversationId);
         if (response && Array.isArray(response.messages)) {
             const newMessages = response.messages.filter(msg => {
-                // For user messages, check if we have a local version
                 if (msg.chat_type === 'user') {
-                    const isDuplicate = chatHistory.some(existing => 
-                        (existing.is_local && existing.message === msg.message) || // Check local messages
+                    return !chatHistory.some(existing => 
+                        (existing.is_local && existing.message === msg.message) || 
                         (existing.TIMESTAMP === msg.TIMESTAMP && existing.message === msg.message)
                     );
-                    return !isDuplicate;
                 }
-                // For other messages, use normal deduplication
                 return !chatHistory.some(existing => 
                     existing.TIMESTAMP === msg.TIMESTAMP && 
                     existing.message === msg.message
@@ -264,23 +253,18 @@ async function fetchNewMessages() {
             });
             
             if (newMessages.length > 0) {
-                const latestMessage = newMessages[newMessages.length - 1];
-                lastMessageTimestamp = latestMessage.TIMESTAMP;
+                lastMessageTimestamp = newMessages[newMessages.length - 1].TIMESTAMP;
             }
-            
             return newMessages;
         }
         return [];
     } catch (error) {
-        // Silently handle expected polling scenarios
         if (error.message?.includes('No new messages') || 
             error.message?.includes('polling timeout') ||
             error.message?.includes('conversation not found') ||
             error.message?.includes('Network request failed')) {
             return [];
         }
-        // Only log and throw for unexpected critical failures
-        console.error('Unexpected API Error:', error.message || 'Unknown error');
         throw error;
     }
 }
@@ -308,23 +292,19 @@ function addMessageToHistory(message) {
 }
 
 function cleanupChat() {
-    // Clear existing intervals
     if (currentPollInterval) {
         clearInterval(currentPollInterval);
         currentPollInterval = null;
     }
     
-    // Clear message observer
     if (messageObserver) {
         messageObserver.disconnect();
     }
     
-    // Clear chat history and reset timestamps
     chatHistory = [];
     lastMessageTimestamp = null;
     retryCount = 0;
     
-    // Clear DOM
     if (chatHistoryContainer) {
         chatHistoryContainer.innerHTML = '';
     }
@@ -332,31 +312,26 @@ function cleanupChat() {
 
 async function switchConversation(conversationId) {
     try {
-        // Cleanup current chat state
         cleanupChat();
-        
         currentConversationId = conversationId;
-        // Update UI to show active conversation
+        
         const conversationElements = document.querySelectorAll('.conversation-item');
         conversationElements.forEach(el => {
             el.classList.toggle('active', el.dataset.id === conversationId);
         });
         
-        // Initialize new chat state
         initializeMessageObserver();
         await loadConversationMessages(conversationId);
         resetPolling();
         
-        // Clear chat input
         const messageInput = document.getElementById('message-input');
         if (messageInput) {
             messageInput.value = '';
         }
     } catch (error) {
-        // Only log detailed error for debugging
         const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
         if (isDevelopment) {
-            console.error('Conversation switch error details:', error);
+            console.error('Conversation switch error:', error);
         }
         utils.showError('Failed to switch conversation. Please try again.');
     }
@@ -375,7 +350,10 @@ async function createNewConversation() {
             throw new Error('Invalid response from server');
         }
     } catch (error) {
-        console.error('Error creating conversation:', error);
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+        if (isDevelopment) {
+            console.error('Error creating conversation:', error);
+        }
         utils.showError('Failed to create conversation. Please try again.');
         return null;
     }
@@ -387,12 +365,14 @@ async function loadConversations() {
         conversations = response?.conversations || [];
         renderConversations();
         
-        // If there are conversations but none is selected, select the most recent one
         if (conversations.length > 0 && !currentConversationId) {
             switchConversation(conversations[0].id);
         }
     } catch (error) {
-        console.error('Failed to load conversations:', error);
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+        if (isDevelopment) {
+            console.error('Failed to load conversations:', error);
+        }
         conversations = [];
         renderConversations();
     }
@@ -408,16 +388,17 @@ async function loadConversationMessages(conversationId) {
                 ? chatHistory[chatHistory.length - 1].TIMESTAMP 
                 : new Date(0).toISOString();
             
-            // Ensure the chat container is cleared before rendering
             if (chatHistoryContainer) {
                 chatHistoryContainer.innerHTML = '';
             }
             
-            // Force immediate render
             await renderChatHistory();
         }
     } catch (error) {
-        console.error('Failed to load conversation messages:', error);
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+        if (isDevelopment) {
+            console.error('Failed to load conversation messages:', error);
+        }
         chatHistory = [];
         renderChatHistory();
     }
@@ -455,7 +436,6 @@ function renderChatHistory() {
     
     chatHistoryContainer.appendChild(fragment);
     
-    // Only scroll if we were already at bottom or if this is a new message
     if (wasScrolledToBottom || sortedMessages[sortedMessages.length - 1]?.TIMESTAMP === lastMessageTimestamp) {
         requestAnimationFrame(() => {
             chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
@@ -516,7 +496,10 @@ async function loadAnalysisHistory() {
         analysisHistory = response.history || [];
         renderAnalysisHistory();
     } catch (error) {
-        console.error('Failed to load analysis history:', error);
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+        if (isDevelopment) {
+            console.error('Failed to load analysis history:', error);
+        }
     }
 }
 
@@ -549,9 +532,7 @@ async function renameConversation(conversationId) {
         }
 
         const newTitle = prompt('Enter new conversation title:', conversation.title);
-        if (!newTitle) {
-            return; // User cancelled
-        }
+        if (!newTitle) return;
 
         if (!newTitle.trim()) {
             utils.showError('Title cannot be empty');
@@ -560,7 +541,6 @@ async function renameConversation(conversationId) {
 
         const response = await api.updateConversationTitle(conversationId, newTitle);
         if (response && response.conversation) {
-            // Update local state with the response data
             const index = conversations.findIndex(c => c.id === conversationId);
             if (index !== -1) {
                 conversations[index] = response.conversation;
@@ -568,10 +548,9 @@ async function renameConversation(conversationId) {
             renderConversations();
         }
     } catch (error) {
-        // Only log error details in development
         const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
         if (isDevelopment) {
-            console.error('Conversation rename error details:', error);
+            console.error('Conversation rename error:', error);
         }
         utils.showError(error.message || 'Failed to rename conversation. Please try again.');
     }
@@ -591,10 +570,8 @@ async function deleteConversation(conversationId) {
 
         const response = await api.deleteConversation(conversationId);
         if (response && response.success === true) {
-            // Remove from local state
             conversations = conversations.filter(c => c.id !== conversationId);
             
-            // If the deleted conversation was current, switch to the most recent one
             if (currentConversationId === conversationId) {
                 currentConversationId = conversations.length > 0 ? conversations[0].id : null;
                 if (currentConversationId) {
@@ -608,16 +585,14 @@ async function deleteConversation(conversationId) {
             renderConversations();
         }
     } catch (error) {
-        // Log error with details if it's not a user cancellation
-        if (error.message !== 'User cancelled deletion') {
+        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
+        if (isDevelopment && error.message !== 'User cancelled deletion') {
             console.error('Error deleting conversation:', {
                 conversationId,
                 error: error.message || 'Unknown error'
             });
         }
         utils.showError(error.message || 'Failed to delete conversation. Please try again.');
-        
-        // Refresh conversations list to ensure consistency
         await loadConversations();
     }
 }
