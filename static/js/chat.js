@@ -228,7 +228,6 @@ async function renameConversation(conversationId) {
                 conversations[index] = response.conversation;
             }
             renderConversations();
-            utils.showSuccess('Conversation renamed successfully');
         }
     } catch (error) {
         console.error('Failed to rename conversation:', error);
@@ -265,7 +264,6 @@ async function deleteConversation(conversationId) {
             }
             
             renderConversations();
-            utils.showSuccess('Conversation deleted successfully');
         }
     } catch (error) {
         console.error('Failed to delete conversation:', error);

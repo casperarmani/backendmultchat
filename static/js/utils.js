@@ -48,5 +48,10 @@ const utils = {
             section.classList.add('hidden');
         });
         document.getElementById(sectionId).classList.remove('hidden');
+    },
+
+    showSuccess(message) {
+        // For now using alert, but can be enhanced with a better UI notification system
+        alert('Success: ' + message);
     }
 };
