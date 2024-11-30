@@ -9,10 +9,10 @@ window.messageObserver = null;
 window.lastMessageTimestamp = null;
 window.retryCount = 0;
 const MAX_RETRIES = 3;
-const INITIAL_POLL_INTERVAL = 1000;
-const MAX_POLL_INTERVAL = 10000;
+const INITIAL_POLL_INTERVAL = 500; // Faster initial polling
+const MAX_POLL_INTERVAL = 5000;    // Shorter maximum interval
 const BATCH_SIZE = 20;
-const RETRY_DELAY = 1000;
+const RETRY_DELAY = 500;           // Faster retry
 
 // File upload handling
 let selectedFiles = new Set();
@@ -205,27 +205,29 @@ function startPolling(interval) {
             const newMessages = await fetchNewMessages();
             
             if (newMessages?.length > 0) {
-                const uniqueMessages = newMessages.filter(msg => 
-                    !chatHistory.some(existing => 
-                        existing.TIMESTAMP === msg.TIMESTAMP && 
-                        existing.message === msg.message
-                    )
-                );
+                // Process messages immediately
+                chatHistory = [...chatHistory, ...newMessages];
+                lastMessageTimestamp = newMessages[newMessages.length - 1].TIMESTAMP;
+                renderChatHistory();
                 
-                if (uniqueMessages.length > 0) {
-                    chatHistory = [...chatHistory, ...uniqueMessages];
-                    lastMessageTimestamp = uniqueMessages[uniqueMessages.length - 1].TIMESTAMP;
-                    renderChatHistory();
+                // If we got a response, increase polling frequency temporarily
+                if (interval > INITIAL_POLL_INTERVAL) {
+                    clearInterval(currentPollInterval);
+                    startPolling(INITIAL_POLL_INTERVAL);
+                }
+            } else {
+                // If no new messages, gradually increase polling interval
+                if (interval < MAX_POLL_INTERVAL) {
+                    clearInterval(currentPollInterval);
+                    startPolling(Math.min(interval * 1.5, MAX_POLL_INTERVAL));
                 }
             }
         } catch (error) {
-            // Silently handle polling errors
-            if (error.name === 'AbortError' || 
-                error.message?.includes('No new messages') || 
-                error.message?.includes('polling timeout') || 
-                error.message?.includes('conversation not found') ||
-                error.message?.includes('Network request failed')) {
-                return;
+            if (!error.message?.includes('No new messages') && 
+                !error.message?.includes('polling timeout') && 
+                !error.message?.includes('conversation not found') &&
+                !error.message?.includes('Network request failed')) {
+                console.error('Polling error:', error);
             }
         } finally {
             isPolling = false;
