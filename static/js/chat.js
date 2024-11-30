@@ -331,39 +331,68 @@ async function loadAnalysisHistory() {
 }
 
 function renderChatHistory() {
-    chatHistoryContainer.innerHTML = '';
-
-    // Sort messages by timestamp in descending order for newest first
+    // Preserve scroll position
+    const wasScrolledToBottom = chatHistoryContainer.scrollHeight - chatHistoryContainer.scrollTop === chatHistoryContainer.clientHeight;
+    
+    // Sort messages by timestamp in ascending order for natural flow
     const sortedMessages = [...chatHistory].sort((a, b) => {
-        return new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP);
+        return new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP);
     });
 
-    // Create a document fragment for better performance
+    // Create a document fragment and reuse DOM elements when possible
     const fragment = document.createDocumentFragment();
+    const existingMessages = new Map();
     
-    sortedMessages.forEach(message => {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.chat_type}`;
-        const formattedDate = utils.formatDate(message.TIMESTAMP);
-        
-        messageDiv.innerHTML = `
-            <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
-            <div class="message-timestamp" title="${formattedDate}">${formattedDate}</div>
-        `;
-        fragment.appendChild(messageDiv);
+    // Store existing message elements for reuse
+    Array.from(chatHistoryContainer.children).forEach(element => {
+        const timestamp = element.querySelector('.message-timestamp').getAttribute('data-timestamp');
+        existingMessages.set(timestamp, element);
     });
     
-    // Clear and append all messages at once
+    // Batch DOM operations
+    const messagesToAdd = [];
+    sortedMessages.forEach(message => {
+        const timestamp = message.TIMESTAMP;
+        const existingElement = existingMessages.get(timestamp);
+        
+        if (existingElement) {
+            fragment.appendChild(existingElement);
+            existingMessages.delete(timestamp);
+        } else {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.chat_type}`;
+            const formattedDate = utils.formatDate(message.TIMESTAMP);
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
+                <div class="message-timestamp" data-timestamp="${timestamp}" title="${formattedDate}">${formattedDate}</div>
+            `;
+            messagesToAdd.push(messageDiv);
+        }
+    });
+    
+    // Append new messages in batches
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < messagesToAdd.length; i += BATCH_SIZE) {
+        const batch = messagesToAdd.slice(i, i + BATCH_SIZE);
+        batch.forEach(msg => fragment.appendChild(msg));
+        
+        if (i + BATCH_SIZE < messagesToAdd.length) {
+            // Allow browser to process the batch
+            requestAnimationFrame(() => {});
+        }
+    }
+    
+    // Efficiently update DOM
     chatHistoryContainer.innerHTML = '';
     chatHistoryContainer.appendChild(fragment);
     
-    // Smooth scroll to bottom with animation
-    requestAnimationFrame(() => {
-        chatHistoryContainer.scrollTo({
-            top: chatHistoryContainer.scrollHeight,
-            behavior: 'smooth'
+    // Optimize scroll behavior
+    if (wasScrolledToBottom) {
+        requestAnimationFrame(() => {
+            chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
         });
-    });
+    }
 }
 
 function renderAnalysisHistory() {
