@@ -207,6 +207,12 @@ function startPolling(interval) {
         
         try {
             isPolling = true;
+            
+            // Health check log
+            if (process.env.NODE_ENV === 'development') {
+                console.debug('Health check: Polling for new messages');
+            }
+            
             const newMessages = await fetchNewMessages();
             
             if (newMessages && newMessages.length > 0) {
@@ -264,12 +270,20 @@ async function fetchNewMessages() {
             if (newMessages.length > 0) {
                 const latestMessage = newMessages[newMessages.length - 1];
                 lastMessageTimestamp = latestMessage.TIMESTAMP;
+                // Only log new message arrival for debugging purposes
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`Received ${newMessages.length} new messages`);
+                }
             }
             
             return newMessages;
         }
         return [];
     } catch (error) {
+        // Log only real API failures, not routine polling responses
+        if (!error.message?.includes('No new messages')) {
+            console.error('Failed to fetch messages:', error.message);
+        }
         throw error;
     }
 }
