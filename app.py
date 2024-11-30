@@ -58,12 +58,20 @@ class ColoredFormatter(logging.Formatter):
     format_str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     FORMATS = {
-        logging.DEBUG: grey + format_str + reset,
-        logging.INFO: green + format_str + reset,
+        logging.DEBUG: format_str,  # Default/white color
+        logging.INFO: format_str,   # Default/white color
         logging.WARNING: yellow + format_str + reset,
         logging.ERROR: red + format_str + reset,
         logging.CRITICAL: bold_red + format_str + reset
     }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        # Make HTTP requests green
+        if 'HTTP Request:' in record.getMessage():
+            log_fmt = self.green + self.format_str + self.reset
+        formatter = logging.Formatter(log_fmt, datefmt='%Y-%m-%d %H:%M:%S')
+        return formatter.format(record)
 
     def format(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
