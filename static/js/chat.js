@@ -208,12 +208,6 @@ function startPolling(interval) {
         try {
             isPolling = true;
             
-            // Health check log - controlled via localStorage or window.DEBUG flag
-            const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
-            if (isDevelopment) {
-                console.debug('Health check: Polling for new messages');
-            }
-            
             const newMessages = await fetchNewMessages();
             
             if (newMessages && newMessages.length > 0) {
@@ -271,11 +265,6 @@ async function fetchNewMessages() {
             if (newMessages.length > 0) {
                 const latestMessage = newMessages[newMessages.length - 1];
                 lastMessageTimestamp = latestMessage.TIMESTAMP;
-                // Only log new message arrival for debugging purposes
-                const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
-                if (isDevelopment) {
-                    console.log(`Received ${newMessages.length} new messages`);
-                }
             }
             
             return newMessages;
