@@ -133,10 +133,20 @@ function startPolling(interval) {
     
     currentPollInterval = setInterval(async () => {
         try {
-            const messages = await fetchNewMessages();
+            const newMessages = await fetchNewMessages();
             
-            if (messages && messages.length > 0) {
-                messages.forEach(msg => addMessageToHistory(msg));
+            if (newMessages && newMessages.length > 0) {
+                // Batch update chatHistory
+                const updatedHistory = [...chatHistory];
+                newMessages.forEach(msg => {
+                    if (!updatedHistory.some(m => m.TIMESTAMP === msg.TIMESTAMP)) {
+                        updatedHistory.push(msg);
+                    }
+                });
+                
+                chatHistory = updatedHistory;
+                renderChatHistory(); // Single render call for batch update
+                
                 consecutiveEmptyResponses = 0;
                 currentInterval = INITIAL_POLL_INTERVAL;
             } else {
@@ -166,12 +176,18 @@ async function fetchNewMessages() {
         );
         
         if (response && Array.isArray(response.messages)) {
-            const newMessages = response.messages.filter(msg => 
-                !chatHistory.some(existing => existing.TIMESTAMP === msg.TIMESTAMP)
-            );
+            // More robust deduplication using both timestamp and message content
+            const newMessages = response.messages.filter(msg => {
+                const isDuplicate = chatHistory.some(existing => 
+                    existing.TIMESTAMP === msg.TIMESTAMP && 
+                    existing.message === msg.message
+                );
+                return !isDuplicate;
+            });
             
             if (newMessages.length > 0) {
-                lastMessageTimestamp = newMessages[newMessages.length - 1].TIMESTAMP;
+                const latestMessage = newMessages[newMessages.length - 1];
+                lastMessageTimestamp = latestMessage.TIMESTAMP;
             }
             
             return newMessages;
@@ -183,17 +199,19 @@ async function fetchNewMessages() {
 }
 
 function addMessageToHistory(message) {
-    // Only add to history if message doesn't already exist
-    if (!chatHistory.some(m => m.TIMESTAMP === message.TIMESTAMP)) {
+    if (!message || !message.TIMESTAMP) return;
+    
+    const isDuplicate = chatHistory.some(m => 
+        m.TIMESTAMP === message.TIMESTAMP && 
+        m.message === message.message
+    );
+    
+    if (!isDuplicate) {
         chatHistory.push(message);
-        
-        // Update last message timestamp
         const messageTimestamp = new Date(message.TIMESTAMP);
         if (!lastMessageTimestamp || messageTimestamp > new Date(lastMessageTimestamp)) {
             lastMessageTimestamp = message.TIMESTAMP;
         }
-        
-        // Trigger a single render
         renderChatHistory();
     }
 }
