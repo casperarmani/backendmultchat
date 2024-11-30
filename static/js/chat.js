@@ -4,6 +4,15 @@ window.analysisHistory = [];
 window.conversations = [];
 window.currentConversationId = null;
 window.chatHistoryContainer = null;
+window.currentPollInterval = null;
+window.messageObserver = null;
+window.lastMessageTimestamp = null;
+window.retryCount = 0;
+const MAX_RETRIES = 3;
+const INITIAL_POLL_INTERVAL = 1000;
+const MAX_POLL_INTERVAL = 10000;
+const BATCH_SIZE = 20;
+const RETRY_DELAY = 1000;
 
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
@@ -11,6 +20,9 @@ async function initChat() {
     const videoUpload = document.getElementById('video-upload');
     const uploadStatus = document.getElementById('upload-status');
     window.chatHistoryContainer = document.getElementById('chat-history');
+
+    // Initialize IntersectionObserver for lazy loading
+    initializeMessageObserver();
 
     // Add conversation container to the chat interface
     const conversationsContainer = document.createElement('div');
@@ -35,7 +47,6 @@ async function initChat() {
         ]);
     } catch (error) {
         console.error('Error loading initial data:', error);
-        // Continue execution even if initial load fails
     }
 
     chatForm.addEventListener('submit', async (e) => {
@@ -73,47 +84,10 @@ async function initChat() {
             };
             
             // Add to chat history and render
-            chatHistory.push(userMessage);
-            renderChatHistory();
+            addMessageToHistory(userMessage);
             
-            // Start polling for bot response
-            let pollAttempts = 0;
-            const maxAttempts = 30; // 30 seconds with 1-second intervals
-            
-            const pollInterval = setInterval(async () => {
-                try {
-                    pollAttempts++;
-                    const messages = await api.getConversationMessages(currentConversationId);
-                    const botMessages = messages.messages.filter(msg => 
-                        msg.chat_type === 'bot' && 
-                        new Date(msg.TIMESTAMP) > new Date(timestamp)
-                    );
-                    
-                    if (botMessages.length > 0) {
-                        const latestBotMessage = botMessages.sort((a, b) => 
-                            new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP)
-                        )[0];
-                        
-                        // Check if this bot message is already in our chat history
-                        if (!chatHistory.some(msg => 
-                            msg.chat_type === 'bot' && 
-                            msg.TIMESTAMP === latestBotMessage.TIMESTAMP)) {
-                            clearInterval(pollInterval);
-                            chatHistory.push(latestBotMessage);
-                            renderChatHistory();
-                        }
-                    }
-                    
-                    // Stop polling after max attempts
-                    if (pollAttempts >= maxAttempts) {
-                        clearInterval(pollInterval);
-                        console.log('Stopped polling for bot response after timeout');
-                    }
-                } catch (error) {
-                    console.error('Error polling for bot response:', error);
-                    clearInterval(pollInterval);
-                }
-            }, 1000);
+            // Reset polling interval and start immediate polling
+            resetPolling();
             
             // Only reload analysis history if videos were uploaded
             if (videos && videos.length > 0) {
@@ -126,6 +100,167 @@ async function initChat() {
             messageInput.disabled = false;
         }
     });
+}
+
+function initializeMessageObserver() {
+    messageObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                messageObserver.unobserve(entry.target);
+            }
+        });
+    }, {
+        root: chatHistoryContainer,
+        threshold: 0.1
+    });
+}
+
+function resetPolling() {
+    if (currentPollInterval) {
+        clearInterval(currentPollInterval);
+    }
+    startPolling(INITIAL_POLL_INTERVAL);
+}
+
+function startPolling(interval) {
+    let currentInterval = interval;
+    let consecutiveEmptyResponses = 0;
+    
+    currentPollInterval = setInterval(async () => {
+        try {
+            const messages = await fetchNewMessages();
+            
+            if (messages && messages.length > 0) {
+                messages.forEach(msg => addMessageToHistory(msg));
+                consecutiveEmptyResponses = 0;
+                currentInterval = INITIAL_POLL_INTERVAL;
+            } else {
+                consecutiveEmptyResponses++;
+                if (consecutiveEmptyResponses >= 2) {
+                    currentInterval = Math.min(currentInterval * 2, MAX_POLL_INTERVAL);
+                    resetPolling();
+                }
+            }
+        } catch (error) {
+            console.error('Error polling for messages:', error);
+            retryCount++;
+            if (retryCount >= MAX_RETRIES) {
+                clearInterval(currentPollInterval);
+                utils.showError('Failed to fetch messages. Please refresh the page.');
+            }
+        }
+    }, currentInterval);
+}
+
+async function fetchNewMessages() {
+    const timestamp = lastMessageTimestamp || new Date(0).toISOString();
+    try {
+        const response = await api.getConversationMessages(
+            currentConversationId,
+            { since: timestamp }
+        );
+        
+        if (response && Array.isArray(response.messages)) {
+            const newMessages = response.messages.filter(msg => 
+                !chatHistory.some(existing => existing.TIMESTAMP === msg.TIMESTAMP)
+            );
+            
+            if (newMessages.length > 0) {
+                lastMessageTimestamp = newMessages[newMessages.length - 1].TIMESTAMP;
+            }
+            
+            return newMessages;
+        }
+        return [];
+    } catch (error) {
+        throw error;
+    }
+}
+
+function addMessageToHistory(message) {
+    chatHistory.push(message);
+    renderMessage(message);
+    
+    // Update last message timestamp
+    const messageTimestamp = new Date(message.TIMESTAMP);
+    if (!lastMessageTimestamp || messageTimestamp > new Date(lastMessageTimestamp)) {
+        lastMessageTimestamp = message.TIMESTAMP;
+    }
+}
+
+function renderMessage(message) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${message.chat_type}`;
+    const formattedDate = utils.formatDate(message.TIMESTAMP);
+    
+    messageDiv.innerHTML = `
+        <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
+        <div class="message-timestamp" data-timestamp="${message.TIMESTAMP}" title="${formattedDate}">${formattedDate}</div>
+    `;
+    
+    // Add to DOM and observe for lazy loading
+    messageDiv.style.opacity = '0';
+    chatHistoryContainer.appendChild(messageDiv);
+    messageObserver.observe(messageDiv);
+    
+    // Scroll to bottom if user was at bottom
+    if (chatHistoryContainer.scrollHeight - chatHistoryContainer.scrollTop <= chatHistoryContainer.clientHeight + 100) {
+        requestAnimationFrame(() => {
+            chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
+        });
+    }
+}
+
+function cleanupChat() {
+    // Clear existing intervals
+    if (currentPollInterval) {
+        clearInterval(currentPollInterval);
+        currentPollInterval = null;
+    }
+    
+    // Clear message observer
+    if (messageObserver) {
+        messageObserver.disconnect();
+    }
+    
+    // Clear chat history and reset timestamps
+    chatHistory = [];
+    lastMessageTimestamp = null;
+    retryCount = 0;
+    
+    // Clear DOM
+    if (chatHistoryContainer) {
+        chatHistoryContainer.innerHTML = '';
+    }
+}
+
+async function switchConversation(conversationId) {
+    try {
+        // Cleanup current chat state
+        cleanupChat();
+        
+        currentConversationId = conversationId;
+        // Update UI to show active conversation
+        const conversationElements = document.querySelectorAll('.conversation-item');
+        conversationElements.forEach(el => {
+            el.classList.toggle('active', el.dataset.id === conversationId);
+        });
+        
+        // Initialize new chat state
+        initializeMessageObserver();
+        await loadConversationMessages(conversationId);
+        resetPolling();
+        
+        // Clear chat input
+        const messageInput = document.getElementById('message-input');
+        if (messageInput) {
+            messageInput.value = '';
+        }
+    } catch (error) {
+        console.error('Error switching conversation:', error);
+        utils.showError('Failed to switch conversation. Please try again.');
+    }
 }
 
 async function createNewConversation() {
@@ -170,10 +305,14 @@ async function loadConversationMessages(conversationId) {
         const response = await api.getConversationMessages(conversationId);
         if (response && Array.isArray(response.messages)) {
             chatHistory = response.messages;
+            lastMessageTimestamp = chatHistory.length > 0 
+                ? chatHistory[chatHistory.length - 1].TIMESTAMP 
+                : new Date(0).toISOString();
+            renderChatHistory();
         } else {
             chatHistory = [];
+            renderChatHistory();
         }
-        renderChatHistory();
     } catch (error) {
         console.error('Failed to load conversation messages:', error);
         chatHistory = [];
@@ -181,25 +320,124 @@ async function loadConversationMessages(conversationId) {
     }
 }
 
-async function switchConversation(conversationId) {
-    try {
-        currentConversationId = conversationId;
-        // Update UI to show active conversation
-        const conversationElements = document.querySelectorAll('.conversation-item');
-        conversationElements.forEach(el => {
-            el.classList.toggle('active', el.dataset.id === conversationId);
-        });
-        await loadConversationMessages(conversationId);
+function renderChatHistory() {
+    chatHistoryContainer.innerHTML = '';
+    
+    const sortedMessages = [...chatHistory].sort((a, b) => {
+        return new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP);
+    });
+    
+    // Render messages in batches
+    let currentBatch = [];
+    
+    sortedMessages.forEach((message, index) => {
+        currentBatch.push(message);
         
-        // Clear chat input
-        const messageInput = document.getElementById('message-input');
-        if (messageInput) {
-            messageInput.value = '';
+        if (currentBatch.length === BATCH_SIZE || index === sortedMessages.length - 1) {
+            const fragment = document.createDocumentFragment();
+            currentBatch.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.chat_type}`;
+                const formattedDate = utils.formatDate(msg.TIMESTAMP);
+                
+                messageDiv.innerHTML = `
+                    <div class="message-content">${utils.sanitizeHTML(msg.message)}</div>
+                    <div class="message-timestamp" data-timestamp="${msg.TIMESTAMP}" title="${formattedDate}">${formattedDate}</div>
+                `;
+                messageDiv.style.opacity = '0';
+                fragment.appendChild(messageDiv);
+                messageObserver.observe(messageDiv);
+            });
+            
+            requestAnimationFrame(() => {
+                chatHistoryContainer.appendChild(fragment);
+            });
+            
+            currentBatch = [];
         }
+    });
+    
+    // Scroll to bottom
+    requestAnimationFrame(() => {
+        chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
+    });
+}
+
+function renderConversations() {
+    const conversationsList = document.getElementById('conversations-list');
+    conversationsList.innerHTML = '';
+
+    conversations.forEach(conv => {
+        const convDiv = document.createElement('div');
+        convDiv.className = `conversation-item ${conv.id === currentConversationId ? 'active' : ''}`;
+        convDiv.dataset.id = conv.id;
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'conversation-content';
+        contentDiv.innerHTML = `
+            <span class="conversation-title">${utils.sanitizeHTML(conv.title)}</span>
+            <span class="conversation-date">${utils.formatDate(conv.created_at)}</span>
+        `;
+        contentDiv.addEventListener('click', () => switchConversation(conv.id));
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'conversation-actions';
+        
+        const renameButton = document.createElement('button');
+        renameButton.className = 'conversation-rename-btn';
+        renameButton.innerHTML = '✏️';
+        renameButton.title = 'Rename conversation';
+        renameButton.onclick = (e) => {
+            e.stopPropagation();
+            renameConversation(conv.id);
+        };
+        
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'conversation-delete-btn';
+        deleteButton.innerHTML = '🗑️';
+        deleteButton.title = 'Delete conversation';
+        deleteButton.onclick = (e) => {
+            e.stopPropagation();
+            deleteConversation(conv.id);
+        };
+        
+        actionsDiv.appendChild(renameButton);
+        actionsDiv.appendChild(deleteButton);
+        
+        convDiv.appendChild(contentDiv);
+        convDiv.appendChild(actionsDiv);
+        conversationsList.appendChild(convDiv);
+    });
+}
+
+async function loadAnalysisHistory() {
+    try {
+        const response = await api.getVideoAnalysisHistory();
+        analysisHistory = response.history || [];
+        renderAnalysisHistory();
     } catch (error) {
-        console.error('Error switching conversation:', error);
-        utils.showError('Failed to switch conversation. Please try again.');
+        console.error('Failed to load analysis history:', error);
     }
+}
+
+function renderAnalysisHistory() {
+    const analysisContainer = document.getElementById('analysis-history');
+    analysisContainer.innerHTML = '';
+
+    analysisHistory.forEach(analysis => {
+        const analysisDiv = document.createElement('div');
+        analysisDiv.className = 'analysis-item';
+        analysisDiv.innerHTML = `
+            <h4>${utils.sanitizeHTML(analysis.upload_file_name)}</h4>
+            <div class="analysis-details">
+                ${analysis.video_duration ? `<p>Duration: ${analysis.video_duration}</p>` : ''}
+                ${analysis.video_format ? `<p>Format: ${analysis.video_format}</p>` : ''}
+            </div>
+            <div class="analysis-content">${utils.sanitizeHTML(analysis.analysis)}</div>
+            <div class="analysis-timestamp">${utils.formatDate(analysis.timestamp)}</div>
+        `;
+        analysisContainer.appendChild(analysisDiv);
+    });
 }
 
 async function renameConversation(conversationId) {
@@ -272,145 +510,4 @@ async function deleteConversation(conversationId) {
         // Refresh conversations list to ensure consistency
         await loadConversations();
     }
-}
-function renderConversations() {
-    const conversationsList = document.getElementById('conversations-list');
-    conversationsList.innerHTML = '';
-
-    conversations.forEach(conv => {
-        const convDiv = document.createElement('div');
-        convDiv.className = `conversation-item ${conv.id === currentConversationId ? 'active' : ''}`;
-        convDiv.dataset.id = conv.id;
-        
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'conversation-content';
-        contentDiv.innerHTML = `
-            <span class="conversation-title">${utils.sanitizeHTML(conv.title)}</span>
-            <span class="conversation-date">${utils.formatDate(conv.created_at)}</span>
-        `;
-        contentDiv.addEventListener('click', () => switchConversation(conv.id));
-        
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'conversation-actions';
-        
-        const renameButton = document.createElement('button');
-        renameButton.className = 'conversation-rename-btn';
-        renameButton.innerHTML = '✏️';
-        renameButton.title = 'Rename conversation';
-        renameButton.onclick = (e) => {
-            e.stopPropagation();
-            renameConversation(conv.id);
-        };
-        
-        const deleteButton = document.createElement('button');
-        deleteButton.className = 'conversation-delete-btn';
-        deleteButton.innerHTML = '🗑️';
-        deleteButton.title = 'Delete conversation';
-        deleteButton.onclick = (e) => {
-            e.stopPropagation();
-            deleteConversation(conv.id);
-        };
-        
-        actionsDiv.appendChild(renameButton);
-        actionsDiv.appendChild(deleteButton);
-        
-        convDiv.appendChild(contentDiv);
-        convDiv.appendChild(actionsDiv);
-        conversationsList.appendChild(convDiv);
-    });
-}
-
-async function loadAnalysisHistory() {
-    try {
-        const response = await api.getVideoAnalysisHistory();
-        analysisHistory = response.history || [];
-        renderAnalysisHistory();
-    } catch (error) {
-        console.error('Failed to load analysis history:', error);
-    }
-}
-
-function renderChatHistory() {
-    // Preserve scroll position
-    const wasScrolledToBottom = chatHistoryContainer.scrollHeight - chatHistoryContainer.scrollTop === chatHistoryContainer.clientHeight;
-    
-    // Sort messages by timestamp in ascending order for natural flow
-    const sortedMessages = [...chatHistory].sort((a, b) => {
-        return new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP);
-    });
-
-    // Create a document fragment and reuse DOM elements when possible
-    const fragment = document.createDocumentFragment();
-    const existingMessages = new Map();
-    
-    // Store existing message elements for reuse
-    Array.from(chatHistoryContainer.children).forEach(element => {
-        const timestamp = element.querySelector('.message-timestamp').getAttribute('data-timestamp');
-        existingMessages.set(timestamp, element);
-    });
-    
-    // Batch DOM operations
-    const messagesToAdd = [];
-    sortedMessages.forEach(message => {
-        const timestamp = message.TIMESTAMP;
-        const existingElement = existingMessages.get(timestamp);
-        
-        if (existingElement) {
-            fragment.appendChild(existingElement);
-            existingMessages.delete(timestamp);
-        } else {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${message.chat_type}`;
-            const formattedDate = utils.formatDate(message.TIMESTAMP);
-            
-            messageDiv.innerHTML = `
-                <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
-                <div class="message-timestamp" data-timestamp="${timestamp}" title="${formattedDate}">${formattedDate}</div>
-            `;
-            messagesToAdd.push(messageDiv);
-        }
-    });
-    
-    // Append new messages in batches
-    const BATCH_SIZE = 20;
-    for (let i = 0; i < messagesToAdd.length; i += BATCH_SIZE) {
-        const batch = messagesToAdd.slice(i, i + BATCH_SIZE);
-        batch.forEach(msg => fragment.appendChild(msg));
-        
-        if (i + BATCH_SIZE < messagesToAdd.length) {
-            // Allow browser to process the batch
-            requestAnimationFrame(() => {});
-        }
-    }
-    
-    // Efficiently update DOM
-    chatHistoryContainer.innerHTML = '';
-    chatHistoryContainer.appendChild(fragment);
-    
-    // Optimize scroll behavior
-    if (wasScrolledToBottom) {
-        requestAnimationFrame(() => {
-            chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
-        });
-    }
-}
-
-function renderAnalysisHistory() {
-    const analysisContainer = document.getElementById('analysis-history');
-    analysisContainer.innerHTML = '';
-
-    analysisHistory.forEach(analysis => {
-        const analysisDiv = document.createElement('div');
-        analysisDiv.className = 'analysis-item';
-        analysisDiv.innerHTML = `
-            <h4>${utils.sanitizeHTML(analysis.upload_file_name)}</h4>
-            <div class="analysis-details">
-                ${analysis.video_duration ? `<p>Duration: ${analysis.video_duration}</p>` : ''}
-                ${analysis.video_format ? `<p>Format: ${analysis.video_format}</p>` : ''}
-            </div>
-            <div class="analysis-content">${utils.sanitizeHTML(analysis.analysis)}</div>
-            <div class="analysis-timestamp">${utils.formatDate(analysis.timestamp)}</div>
-        `;
-        analysisContainer.appendChild(analysisDiv);
-    });
 }
