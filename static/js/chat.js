@@ -103,15 +103,19 @@ async function initChat() {
 }
 
 function initializeMessageObserver() {
+    if (messageObserver) {
+        messageObserver.disconnect();
+    }
+    
     messageObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
+                entry.target.style.opacity = '1';
                 messageObserver.unobserve(entry.target);
             }
         });
     }, {
-        root: chatHistoryContainer,
+        root: null,
         threshold: 0.1
     });
 }
@@ -308,10 +312,14 @@ async function loadConversationMessages(conversationId) {
             lastMessageTimestamp = chatHistory.length > 0 
                 ? chatHistory[chatHistory.length - 1].TIMESTAMP 
                 : new Date(0).toISOString();
-            renderChatHistory();
-        } else {
-            chatHistory = [];
-            renderChatHistory();
+            
+            // Ensure the chat container is cleared before rendering
+            if (chatHistoryContainer) {
+                chatHistoryContainer.innerHTML = '';
+            }
+            
+            // Force immediate render
+            await renderChatHistory();
         }
     } catch (error) {
         console.error('Failed to load conversation messages:', error);
@@ -321,44 +329,37 @@ async function loadConversationMessages(conversationId) {
 }
 
 function renderChatHistory() {
+    if (!chatHistoryContainer) return;
     chatHistoryContainer.innerHTML = '';
     
-    const sortedMessages = [...chatHistory].sort((a, b) => {
-        return new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP);
-    });
+    const sortedMessages = [...chatHistory].sort((a, b) => 
+        new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP)
+    );
     
-    // Render messages in batches
-    let currentBatch = [];
+    // Create a document fragment for better performance
+    const fragment = document.createDocumentFragment();
     
-    sortedMessages.forEach((message, index) => {
-        currentBatch.push(message);
+    sortedMessages.forEach(message => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.chat_type}`;
+        const formattedDate = utils.formatDate(message.TIMESTAMP);
         
-        if (currentBatch.length === BATCH_SIZE || index === sortedMessages.length - 1) {
-            const fragment = document.createDocumentFragment();
-            currentBatch.forEach(msg => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${msg.chat_type}`;
-                const formattedDate = utils.formatDate(msg.TIMESTAMP);
-                
-                messageDiv.innerHTML = `
-                    <div class="message-content">${utils.sanitizeHTML(msg.message)}</div>
-                    <div class="message-timestamp" data-timestamp="${msg.TIMESTAMP}" title="${formattedDate}">${formattedDate}</div>
-                `;
-                messageDiv.style.opacity = '0';
-                fragment.appendChild(messageDiv);
-                messageObserver.observe(messageDiv);
-            });
-            
-            requestAnimationFrame(() => {
-                chatHistoryContainer.appendChild(fragment);
-            });
-            
-            currentBatch = [];
+        messageDiv.innerHTML = `
+            <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
+            <div class="message-timestamp" data-timestamp="${message.TIMESTAMP}" title="${formattedDate}">${formattedDate}</div>
+        `;
+        
+        fragment.appendChild(messageDiv);
+        
+        // Observe after adding to fragment
+        if (messageObserver) {
+            messageObserver.observe(messageDiv);
         }
     });
     
-    // Scroll to bottom
+    // Append all messages at once
     requestAnimationFrame(() => {
+        chatHistoryContainer.appendChild(fragment);
         chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
     });
 }
