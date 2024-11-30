@@ -333,11 +333,14 @@ async function loadAnalysisHistory() {
 function renderChatHistory() {
     chatHistoryContainer.innerHTML = '';
 
-    // Sort messages by timestamp
+    // Sort messages by timestamp in descending order for newest first
     const sortedMessages = [...chatHistory].sort((a, b) => {
-        return new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP);
+        return new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP);
     });
 
+    // Create a document fragment for better performance
+    const fragment = document.createDocumentFragment();
+    
     sortedMessages.forEach(message => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.chat_type}`;
@@ -347,11 +350,20 @@ function renderChatHistory() {
             <div class="message-content">${utils.sanitizeHTML(message.message)}</div>
             <div class="message-timestamp" title="${formattedDate}">${formattedDate}</div>
         `;
-        chatHistoryContainer.appendChild(messageDiv);
+        fragment.appendChild(messageDiv);
     });
     
-    // Scroll to bottom
-    chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
+    // Clear and append all messages at once
+    chatHistoryContainer.innerHTML = '';
+    chatHistoryContainer.appendChild(fragment);
+    
+    // Smooth scroll to bottom with animation
+    requestAnimationFrame(() => {
+        chatHistoryContainer.scrollTo({
+            top: chatHistoryContainer.scrollHeight,
+            behavior: 'smooth'
+        });
+    });
 }
 
 function renderAnalysisHistory() {

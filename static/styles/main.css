@@ -185,12 +185,14 @@ button:hover {
 
 .chat-history {
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     flex-grow: 1;
     padding: 1rem;
     min-height: 400px;
     max-height: 600px;
     overflow-y: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
 .message {
