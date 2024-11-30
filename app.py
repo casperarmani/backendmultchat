@@ -42,6 +42,16 @@ from session_config import (
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Suppress logs for polling endpoints
+logging.getLogger("uvicorn.access").handlers = []
+class EndpointFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not (
+            "GET /conversations/" in record.getMessage() and 
+            "/messages" in record.getMessage()
+        )
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+
 load_dotenv()
 
 redis_url = os.getenv('REDIS_URL')

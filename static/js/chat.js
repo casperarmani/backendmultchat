@@ -219,14 +219,13 @@ function startPolling(interval) {
                 }
             }
         } catch (error) {
-            const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
-            if (isDevelopment && 
-                error.name !== 'AbortError' && 
-                !error.message?.includes('No new messages') && 
-                !error.message?.includes('polling timeout') && 
-                !error.message?.includes('conversation not found') &&
-                !error.message?.includes('Network request failed')) {
-                console.error('Critical polling error:', error.message || 'Unknown error');
+            // Silently handle polling errors
+            if (error.name === 'AbortError' || 
+                error.message?.includes('No new messages') || 
+                error.message?.includes('polling timeout') || 
+                error.message?.includes('conversation not found') ||
+                error.message?.includes('Network request failed')) {
+                return;
             }
         } finally {
             isPolling = false;
