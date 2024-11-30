@@ -78,12 +78,21 @@ const api = {
     },
 
     async getConversationMessages(conversationId) {
-        const response = await fetch(`/conversations/${conversationId}/messages`);
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.detail || 'Failed to fetch conversation messages');
+        try {
+            const response = await fetch(`/conversations/${conversationId}/messages`);
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.detail || 'Failed to fetch conversation messages');
+            }
+            return response.json();
+        } catch (error) {
+            // Only throw error for non-polling related issues
+            if (!error.message?.includes('Failed to fetch') && 
+                !error.message?.includes('conversation not found')) {
+                throw error;
+            }
+            return { messages: [] };
         }
-        return response.json();
     },
 
     async sendMessage(message, videos = [], conversationId = null) {
@@ -183,7 +192,10 @@ const api = {
             const health = await response.json();
             return health.status === 'healthy';
         } catch (error) {
-            console.error('Health check failed:', error);
+            // Only log health check errors in development mode
+            if (window.DEBUG || localStorage.getItem('DEBUG') === 'true') {
+                console.error('Health check failed:', error);
+            }
             return false;
         }
     }
