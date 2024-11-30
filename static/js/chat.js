@@ -128,43 +128,38 @@ function resetPolling() {
 }
 
 function startPolling(interval) {
-    let currentInterval = interval;
-    let consecutiveEmptyResponses = 0;
+    if (currentPollInterval) {
+        clearInterval(currentPollInterval);
+    }
     
+    let isPolling = false;
     currentPollInterval = setInterval(async () => {
+        if (isPolling) return;
+        
         try {
+            isPolling = true;
             const newMessages = await fetchNewMessages();
             
             if (newMessages && newMessages.length > 0) {
-                // Batch update chatHistory
-                const updatedHistory = [...chatHistory];
-                newMessages.forEach(msg => {
-                    if (!updatedHistory.some(m => m.TIMESTAMP === msg.TIMESTAMP)) {
-                        updatedHistory.push(msg);
-                    }
-                });
+                const uniqueMessages = newMessages.filter(msg => 
+                    !chatHistory.some(existing => 
+                        existing.TIMESTAMP === msg.TIMESTAMP && 
+                        existing.message === msg.message
+                    )
+                );
                 
-                chatHistory = updatedHistory;
-                renderChatHistory(); // Single render call for batch update
-                
-                consecutiveEmptyResponses = 0;
-                currentInterval = INITIAL_POLL_INTERVAL;
-            } else {
-                consecutiveEmptyResponses++;
-                if (consecutiveEmptyResponses >= 2) {
-                    currentInterval = Math.min(currentInterval * 2, MAX_POLL_INTERVAL);
-                    resetPolling();
+                if (uniqueMessages.length > 0) {
+                    chatHistory = [...chatHistory, ...uniqueMessages];
+                    lastMessageTimestamp = uniqueMessages[uniqueMessages.length - 1].TIMESTAMP;
+                    renderChatHistory();
                 }
             }
         } catch (error) {
             console.error('Error polling for messages:', error);
-            retryCount++;
-            if (retryCount >= MAX_RETRIES) {
-                clearInterval(currentPollInterval);
-                utils.showError('Failed to fetch messages. Please refresh the page.');
-            }
+        } finally {
+            isPolling = false;
         }
-    }, currentInterval);
+    }, interval);
 }
 
 async function fetchNewMessages() {
@@ -199,11 +194,12 @@ async function fetchNewMessages() {
 }
 
 function addMessageToHistory(message) {
-    if (!message || !message.TIMESTAMP) return;
+    if (!message || !message.TIMESTAMP || !message.message) return;
     
     const isDuplicate = chatHistory.some(m => 
         m.TIMESTAMP === message.TIMESTAMP && 
-        m.message === message.message
+        m.message === message.message &&
+        m.chat_type === message.chat_type
     );
     
     if (!isDuplicate) {
@@ -330,13 +326,15 @@ async function loadConversationMessages(conversationId) {
 
 function renderChatHistory() {
     if (!chatHistoryContainer) return;
-    chatHistoryContainer.innerHTML = '';
     
+    const wasScrolledToBottom = chatHistoryContainer.scrollHeight - chatHistoryContainer.scrollTop 
+        <= chatHistoryContainer.clientHeight + 10;
+    
+    chatHistoryContainer.innerHTML = '';
     const sortedMessages = [...chatHistory].sort((a, b) => 
         new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP)
     );
     
-    // Create a document fragment for better performance
     const fragment = document.createDocumentFragment();
     
     sortedMessages.forEach(message => {
@@ -351,17 +349,19 @@ function renderChatHistory() {
         
         fragment.appendChild(messageDiv);
         
-        // Observe after adding to fragment
         if (messageObserver) {
             messageObserver.observe(messageDiv);
         }
     });
     
-    // Append all messages at once
-    requestAnimationFrame(() => {
-        chatHistoryContainer.appendChild(fragment);
-        chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
-    });
+    chatHistoryContainer.appendChild(fragment);
+    
+    // Only scroll if we were already at bottom or if this is a new message
+    if (wasScrolledToBottom || sortedMessages[sortedMessages.length - 1]?.TIMESTAMP === lastMessageTimestamp) {
+        requestAnimationFrame(() => {
+            chatHistoryContainer.scrollTop = chatHistoryContainer.scrollHeight;
+        });
+    }
 }
 
 function renderConversations() {
