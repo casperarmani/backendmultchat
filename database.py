@@ -140,24 +140,32 @@ async def update_conversation_title(conversation_id: uuid.UUID, title: str) -> D
         # First check if conversation exists and is not deleted
         check_response = supabase.table("conversations").select("*").eq("id", str(conversation_id)).is_("deleted_at", "null").execute()
         if not check_response.data:
-            raise ValueError("Conversation not found or has been deleted")
+            logger.error(f"Conversation {conversation_id} not found or has been deleted")
+            raise ValueError(f"Conversation {conversation_id} not found or has been deleted")
+
+        # Validate title
+        if not title or len(title.strip()) == 0:
+            logger.error("Title cannot be empty")
+            raise ValueError("Title cannot be empty")
 
         # Update the conversation
         response = supabase.table("conversations").update({
-            "title": title,
+            "title": title.strip(),
             "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", str(conversation_id)).execute()
 
         if not response.data:
-            raise ValueError("Failed to update conversation")
+            logger.error(f"Failed to update conversation {conversation_id}")
+            raise ValueError(f"Failed to update conversation {conversation_id}")
 
+        logger.info(f"Successfully updated conversation {conversation_id} with title '{title}'")
         return response.data[0]
     except ValueError as e:
         logger.error(f"Validation error updating conversation title: {str(e)}")
         raise
     except Exception as e:
-        logger.error(f"Error updating conversation title: {str(e)}")
-        raise ValueError(f"Failed to update conversation title: {str(e)}")
+        logger.error(f"Unexpected error updating conversation title: {str(e)}")
+        raise ValueError(f"An unexpected error occurred while updating the conversation: {str(e)}")
 
 async def delete_conversation(conversation_id: uuid.UUID) -> bool:
     """Soft delete a conversation"""
@@ -165,22 +173,26 @@ async def delete_conversation(conversation_id: uuid.UUID) -> bool:
         # First check if conversation exists and is not already deleted
         check_response = supabase.table("conversations").select("*").eq("id", str(conversation_id)).is_("deleted_at", "null").execute()
         if not check_response.data:
-            raise ValueError("Conversation not found or has been already deleted")
+            logger.error(f"Conversation {conversation_id} not found or has been already deleted")
+            raise ValueError(f"Conversation {conversation_id} not found or has been already deleted")
 
         # Perform soft delete
         response = supabase.table("conversations").update({
             "deleted_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", str(conversation_id)).execute()
 
         if not response.data:
-            raise ValueError("Failed to delete conversation")
+            logger.error(f"Failed to delete conversation {conversation_id}")
+            raise ValueError(f"Failed to delete conversation {conversation_id}")
 
+        logger.info(f"Successfully deleted conversation {conversation_id}")
         return True
     except ValueError as e:
         logger.error(f"Validation error deleting conversation: {str(e)}")
         raise
     except Exception as e:
-        logger.error(f"Error deleting conversation: {str(e)}")
-        raise ValueError(f"Failed to delete conversation: {str(e)}")
+        logger.error(f"Unexpected error deleting conversation: {str(e)}")
+        raise ValueError(f"An unexpected error occurred while deleting the conversation: {str(e)}")
 
 # End of file
