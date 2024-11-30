@@ -225,11 +225,11 @@ function startPolling(interval) {
                 }
             }
         } catch (error) {
-            // Only log critical errors, ignore routine polling messages
+            // Log all errors except routine polling messages
             if (error.message && 
                 !error.message.includes('No new messages') && 
                 !error.message.includes('polling timeout')) {
-                console.error('Critical polling error:', error.message);
+                console.error('Error polling for messages:', error);
             }
         } finally {
             isPolling = false;
@@ -271,9 +271,15 @@ async function fetchNewMessages() {
         }
         return [];
     } catch (error) {
-        // Log only real API failures, not routine polling responses
-        if (!error.message?.includes('No new messages')) {
-            console.error('Failed to fetch messages:', error.message);
+        // Only log critical API failures
+        if (!error.message?.includes('No new messages') && 
+            !error.message?.includes('polling timeout') &&
+            !error.message?.includes('conversation not found')) {
+            console.error('API Error:', {
+                endpoint: 'fetchNewMessages',
+                conversationId: currentConversationId,
+                error: error.message || 'Unknown error'
+            });
         }
         throw error;
     }
@@ -369,7 +375,7 @@ async function createNewConversation() {
             throw new Error('Invalid response from server');
         }
     } catch (error) {
-        console.error('Failed to create conversation:', error);
+        console.error('Error creating conversation:', error);
         utils.showError('Failed to create conversation. Please try again.');
         return null;
     }
@@ -602,10 +608,12 @@ async function deleteConversation(conversationId) {
             renderConversations();
         }
     } catch (error) {
-        // Only log detailed error in development
-        const isDevelopment = window.DEBUG === true || localStorage.getItem('DEBUG') === 'true';
-        if (isDevelopment) {
-            console.error('Conversation deletion error details:', error);
+        // Log error with details if it's not a user cancellation
+        if (error.message !== 'User cancelled deletion') {
+            console.error('Error deleting conversation:', {
+                conversationId,
+                error: error.message || 'Unknown error'
+            });
         }
         utils.showError(error.message || 'Failed to delete conversation. Please try again.');
         
