@@ -18,7 +18,8 @@ const MESSAGE_CACHE_KEY = 'chat_message_cache';
 let currentController = null;
 let lastUserActivity = Date.now();
 let currentPollDelay = INITIAL_POLL_INTERVAL;
-const messageCache = new WeakMap();
+// Make messageCache re-assignable
+let messageCache = new WeakMap();
 
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
@@ -321,8 +322,8 @@ function cleanupChat() {
         console.warn('Failed to clear message cache:', e);
     }
     
-    // Trigger garbage collection for WeakMap
-    messageCache.clear();
+    // Reset message cache
+    messageCache = new WeakMap();
 }
 
 async function switchConversation(conversationId) {
