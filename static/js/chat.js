@@ -203,14 +203,13 @@ function startPolling(interval) {
     
     let isPolling = false;
     currentPollInterval = setInterval(async () => {
-        if (isPolling) return;
+        if (isPolling || !currentConversationId) return;
         
         try {
             isPolling = true;
+            const newMessages = await fetchNewMessages().catch(() => []);
             
-            const newMessages = await fetchNewMessages();
-            
-            if (newMessages && newMessages.length > 0) {
+            if (newMessages?.length > 0) {
                 const uniqueMessages = newMessages.filter(msg => 
                     !chatHistory.some(existing => 
                         existing.TIMESTAMP === msg.TIMESTAMP && 
@@ -225,12 +224,13 @@ function startPolling(interval) {
                 }
             }
         } catch (error) {
-            // Only log critical errors, not routine polling messages
-            if (error.message && 
-                !error.message.includes('No new messages') && 
-                !error.message.includes('polling timeout') &&
-                !error.message.includes('conversation not found')) {
-                console.error('Critical error:', error.message);
+            // Only log critical system errors
+            if (error.name !== 'AbortError' && 
+                !error.message?.includes('No new messages') && 
+                !error.message?.includes('polling timeout') && 
+                !error.message?.includes('conversation not found') &&
+                !error.message?.includes('Network request failed')) {
+                console.error('System Error:', error.message);
             }
         } finally {
             isPolling = false;
@@ -272,13 +272,15 @@ async function fetchNewMessages() {
         }
         return [];
     } catch (error) {
-        // Only log critical API failures
-        if (!error.message?.includes('No new messages') && 
-            !error.message?.includes('polling timeout') &&
-            !error.message?.includes('conversation not found')) {
-            // Only log real API failures, not expected polling responses
-            console.error('API Error:', error.message || 'Unknown error');
+        // Silently handle expected polling scenarios
+        if (error.message?.includes('No new messages') || 
+            error.message?.includes('polling timeout') ||
+            error.message?.includes('conversation not found') ||
+            error.message?.includes('Network request failed')) {
+            return [];
         }
+        // Only log and throw for unexpected critical failures
+        console.error('Unexpected API Error:', error.message || 'Unknown error');
         throw error;
     }
 }
