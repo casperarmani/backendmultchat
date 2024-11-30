@@ -519,13 +519,37 @@ async def update_conversation_endpoint(
     title: str = Form(..., description="New title for the conversation")
 ):
     """Update a conversation's title"""
-    await get_current_user(request)  # Verify user is authenticated
     try:
-        updated = await update_conversation_title(uuid.UUID(conversation_id), title)
-        return JSONResponse(content={"success": True, "conversation": updated})
+        # Verify user is authenticated
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+        # Validate conversation ID
+        try:
+            conv_id = uuid.UUID(conversation_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+
+        # Validate title
+        if not title or len(title.strip()) == 0:
+            raise HTTPException(status_code=400, detail="Title cannot be empty")
+
+        # Update conversation
+        try:
+            updated = await update_conversation_title(conv_id, title.strip())
+            return JSONResponse(content={"success": True, "conversation": updated})
+        except ValueError as ve:
+            raise HTTPException(status_code=404, detail=str(ve))
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error updating conversation: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while updating the conversation"
+        )
 
 @app.delete("/conversations/{conversation_id}")
 async def delete_conversation_endpoint(
@@ -533,15 +557,40 @@ async def delete_conversation_endpoint(
     request: Request
 ):
     """Delete a conversation"""
-    await get_current_user(request)  # Verify user is authenticated
     try:
-        success = await delete_conversation(uuid.UUID(conversation_id))
-        if not success:
-            raise HTTPException(status_code=404, detail="Conversation not found")
-        return JSONResponse(content={"success": True})
+        # Verify user is authenticated
+        user = await get_current_user(request)
+        if not user:
+            raise HTTPException(status_code=401, detail="User not authenticated")
+
+        # Validate conversation ID
+        try:
+            conv_id = uuid.UUID(conversation_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+
+        # Delete conversation
+        try:
+            await delete_conversation(conv_id)
+            
+            # Clear related caches
+            cache_key = f"conversation:{conversation_id}"
+            redis_manager.invalidate_cache(cache_key)
+            if user and 'id' in user:
+                redis_manager.invalidate_cache(f"chat_history:{user['id']}")
+                
+            return JSONResponse(content={"success": True})
+        except ValueError as ve:
+            raise HTTPException(status_code=404, detail=str(ve))
+            
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error deleting conversation: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while deleting the conversation"
+        )
 @app.post("/send_message")
 async def send_message(
     request: Request,

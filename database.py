@@ -137,11 +137,23 @@ async def get_conversation_messages(conversation_id: uuid.UUID, limit: int = 50)
 async def update_conversation_title(conversation_id: uuid.UUID, title: str) -> Dict:
     """Update a conversation's title"""
     try:
+        # First check if conversation exists and is not deleted
+        check_response = supabase.table("conversations").select("*").eq("id", str(conversation_id)).is_("deleted_at", "null").execute()
+        if not check_response.data:
+            raise ValueError("Conversation not found or has been deleted")
+
+        # Update the conversation
         response = supabase.table("conversations").update({
             "title": title,
-            "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", str(conversation_id)).execute()
-        return response.data[0] if response.data else {}
+
+        if not response.data:
+            raise ValueError("Failed to update conversation")
+
+        return response.data[0]
+    except ValueError as e:
+        logger.error(f"Validation error updating conversation title: {str(e)}")
+        raise
     except Exception as e:
         logger.error(f"Error updating conversation title: {str(e)}")
         raise ValueError(f"Failed to update conversation title: {str(e)}")
@@ -149,13 +161,25 @@ async def update_conversation_title(conversation_id: uuid.UUID, title: str) -> D
 async def delete_conversation(conversation_id: uuid.UUID) -> bool:
     """Soft delete a conversation"""
     try:
+        # First check if conversation exists and is not already deleted
+        check_response = supabase.table("conversations").select("*").eq("id", str(conversation_id)).is_("deleted_at", "null").execute()
+        if not check_response.data:
+            raise ValueError("Conversation not found or has been already deleted")
+
+        # Perform soft delete
         response = supabase.table("conversations").update({
             "deleted_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("id", str(conversation_id)).execute()
-        return bool(response.data)
+
+        if not response.data:
+            raise ValueError("Failed to delete conversation")
+
+        return True
+    except ValueError as e:
+        logger.error(f"Validation error deleting conversation: {str(e)}")
+        raise
     except Exception as e:
         logger.error(f"Error deleting conversation: {str(e)}")
-        return False
+        raise ValueError(f"Failed to delete conversation: {str(e)}")
 
 # End of file
