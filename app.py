@@ -73,6 +73,8 @@ class ColoredFormatter(logging.Formatter):
 # Suppress logs for polling endpoints while keeping format for others
 class EndpointFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
+        # Only filter out the polling endpoint logs
+        # Keep all other logs like health checks, message sending, etc.
         return not (
             "GET /conversations/" in record.getMessage() and 
             "/messages" in record.getMessage()
