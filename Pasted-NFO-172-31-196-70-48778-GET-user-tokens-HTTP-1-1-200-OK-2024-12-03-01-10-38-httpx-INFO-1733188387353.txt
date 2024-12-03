@@ -1,0 +1,58 @@
+NFO:     172.31.196.70:48778 - "GET /user/tokens HTTP/1.1" 200 OK
+2024-12-03 01:10:38 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:42308 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:10:48 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:59840 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:10:48 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:59840 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:10:55 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_tokens?select=tokens&user_id=eq.d661e6c6-994c-4258-bc4c-aa83de45fc83 "HTTP/1.1 200 OK"
+2024-12-03 01:10:55 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_tokens?select=subscription_tier_id%2C%20subscription_tiers%28tier_name%2C%20tokens%2C%20price%29&user_id=eq.d661e6c6-994c-4258-bc4c-aa83de45fc83 "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:59840 - "GET /user/tokens HTTP/1.1" 200 OK
+2024-12-03 01:10:56 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:54148 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:11:08 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:42564 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.31.196.70:42564 - "POST /logout HTTP/1.1" 200 OK
+2024-12-03 01:11:25 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:42564 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.31.196.70:35094 - "GET /user/tokens HTTP/1.1" 401 Unauthorized
+2024-12-03 01:11:38 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:42564 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:11:47 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:35094 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:11:48 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:35094 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.31.196.70:35094 - "GET /user/tokens HTTP/1.1" 401 Unauthorized
+2024-12-03 01:12:08 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:38430 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.31.196.70:38430 - "GET / HTTP/1.1" 200 OK
+INFO:     172.31.196.70:57636 - "GET /js/token-handler.js HTTP/1.1" 304 Not Modified
+INFO:     172.31.196.70:38430 - "GET /styles/main.css HTTP/1.1" 304 Not Modified
+INFO:     172.31.196.70:38430 - "GET /js/auth.js HTTP/1.1" 304 Not Modified
+INFO:     172.31.196.70:38430 - "GET /auth_status HTTP/1.1" 200 OK
+INFO:     172.31.196.70:38430 - "GET /user/tokens HTTP/1.1" 401 Unauthorized
+INFO:     172.31.196.70:50986 - "GET /user/tokens HTTP/1.1" 401 Unauthorized
+2024-12-03 01:12:38 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:38430 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:12:43 - httpx - INFO - HTTP Request: POST https://xghbfotsivdbuqvumyyu.supabase.co/auth/v1/token?grant_type=password "HTTP/1.1 200 OK"
+2024-12-03 01:12:43 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/users?select=%2A&email=eq.test%40gmail.com "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:50986 - "POST /login HTTP/1.1" 200 OK
+INFO:     172.31.196.70:50986 - "GET /auth_status HTTP/1.1" 200 OK
+2024-12-03 01:12:44 - app - INFO - Returning cached video history for user d661e6c6-994c-4258-bc4c-aa83de45fc83
+INFO:     172.31.196.70:50986 - "GET /video_analysis_history HTTP/1.1" 200 OK
+2024-12-03 01:12:44 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/conversations?select=%2A&user_id=eq.d661e6c6-994c-4258-bc4c-aa83de45fc83&deleted_at=is.null&order=created_at.desc&limit=10 "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:53608 - "GET /conversations HTTP/1.1" 200 OK
+2024-12-03 01:12:47 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:53608 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:12:47 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:50986 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:12:48 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/health "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:50986 - "GET /health HTTP/1.1" 200 OK
+2024-12-03 01:12:53 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_tokens?select=tokens&user_id=eq.d661e6c6-994c-4258-bc4c-aa83de45fc83 "HTTP/1.1 200 OK"
+2024-12-03 01:12:53 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_tokens?select=subscription_tier_id%2C%20subscription_tiers%28tier_name%2C%20tokens%2C%20price%29&user_id=eq.d661e6c6-994c-4258-bc4c-aa83de45fc83 "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:50986 - "GET /user/tokens HTTP/1.1" 200 OK
+INFO:     172.31.196.70:53608 - "GET /auth_status HTTP/1.1" 200 OK
+2024-12-03 01:12:53 - app - INFO - Returning cached video history for user d661e6c6-994c-4258-bc4c-aa83de45fc83
+INFO:     172.31.196.70:53608 - "GET /video_analysis_history HTTP/1.1" 200 OK
+2024-12-03 01:12:53 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/conversations?select=%2A&user_id=eq.d661e6c6-994c-4258-bc4c-aa83de45fc83&deleted_at=is.null&order=created_at.desc&limit=10 "HTTP/1.1 200 OK"
+INFO:     172.31.196.70:50986 - "GET /conversations HTTP/1.1" 200 OK
