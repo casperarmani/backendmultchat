@@ -4,6 +4,7 @@ from fastapi import HTTPException, Request
 import uuid
 import logging
 from database import get_user_token_balance, update_token_usage
+from auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -28,67 +29,37 @@ def validate_token_usage(required_tokens: int = 0, per_minute_tokens: int = 0):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             try:
-                # Extract user_id from various possible request formats
-                user_id = None
+                # Extract request object from args or kwargs
                 request_obj = None
-
-                # Find request object in args or kwargs
                 if args and isinstance(args[0], Request):
                     request_obj = args[0]
                 elif 'request' in kwargs and isinstance(kwargs['request'], Request):
                     request_obj = kwargs['request']
 
-                # Case 1: Try to get user from request state/session
-                if request_obj:
-                    try:
-                        # Check request state first
-                        if hasattr(request_obj.state, 'user') and hasattr(request_obj.state.user, 'id'):
-                            user_id = request_obj.state.user.id
-                        # Then check session
-                        elif hasattr(request_obj, 'session') and 'user' in request_obj.session:
-                            session_user = request_obj.session.get('user', {})
-                            if isinstance(session_user, dict) and 'id' in session_user:
-                                user_id = session_user['id']
-                            elif hasattr(session_user, 'id'):
-                                user_id = session_user.id
-                    except Exception as e:
-                        logger.debug(f"Could not extract user ID from request state/session: {str(e)}")
+                if not request_obj:
+                    logger.error("No request object found in function arguments")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Invalid request format"
+                    )
 
-                # Case 2: Direct user dict in kwargs
-                if not user_id and 'user' in kwargs:
-                    user_data = kwargs['user']
-                    if isinstance(user_data, dict) and 'id' in user_data:
-                        user_id = user_data['id']
-                    elif hasattr(user_data, 'id'):
-                        user_id = user_data.id
-
-                # Case 3: Check request user attribute
-                if not user_id and request_obj and hasattr(request_obj, 'user'):
-                    user_data = request_obj.user
-                    if isinstance(user_data, dict) and 'id' in user_data:
-                        user_id = user_data['id']
-                    elif hasattr(user_data, 'id'):
-                        user_id = user_data.id
-
-                # Case 4: Direct user_id in kwargs
-                if not user_id and 'user_id' in kwargs:
-                    user_id = kwargs['user_id']
-
-                if not user_id:
-                    logger.error("User ID not found in request or arguments")
+                # Get user from session using existing get_current_user function
+                user_data = await get_current_user(request_obj)
+                if not user_data or 'id' not in user_data:
+                    logger.error("User not found in session")
                     raise HTTPException(
                         status_code=401,
-                        detail="User not authenticated - ID not found in request"
+                        detail="User not authenticated"
                     )
 
                 try:
-                    # Ensure user_id is properly converted to UUID
-                    user_id = uuid.UUID(str(user_id))
+                    # Convert user ID to UUID
+                    user_id = uuid.UUID(str(user_data['id']))
                 except ValueError as e:
                     logger.error(f"Invalid user ID format: {str(e)}")
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Invalid user ID format: {str(e)}"
+                        detail="Invalid user ID format"
                     )
 
                 # Calculate total required tokens including video duration if applicable

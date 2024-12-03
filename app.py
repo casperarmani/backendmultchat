@@ -130,6 +130,8 @@ app = FastAPI(
 async def startup_event():
     app.state.start_time = time.time()
     app.state.request_count = 0
+    app.state.redis_manager = redis_manager
+    app.state.SESSION_REFRESH_THRESHOLD = SESSION_REFRESH_THRESHOLD
     
     async def cleanup_sessions():
         while True:
@@ -201,44 +203,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 chatbot = Chatbot()
 
-async def get_current_user(request: Request, return_none=False):
-    try:
-        session_id = request.cookies.get('session_id')
-        if not session_id:
-            logger.debug("No session ID in request")
-            if return_none:
-                return None
-            raise HTTPException(status_code=401, detail="Not authenticated")
-        
-        is_valid, session_data = redis_manager.validate_session(session_id)
-        if not is_valid or not session_data:
-            logger.debug("Invalid or expired session")
-            if return_none:
-                return None
-            raise HTTPException(status_code=401, detail="Invalid or expired session")
-
-        if not isinstance(session_data, dict) or 'id' not in session_data:
-            logger.warning("Malformed session data encountered")
-            if return_none:
-                return None
-            raise HTTPException(status_code=401, detail="Invalid session data")
-
-        # Check if session needs refresh
-        current_time = time.time()
-        last_refresh = session_data.get('last_refresh', 0)
-        if current_time - last_refresh > SESSION_REFRESH_THRESHOLD:
-            await redis_manager.refresh_session(session_id)
-
-        return session_data
-    except HTTPException:
-        # Don't log HTTPExceptions as they are expected
-        raise
-    except Exception as e:
-        # Only log unexpected errors
-        logger.error(f"Unexpected error in get_current_user: {str(e)}")
-        if return_none:
-            return None
-        raise HTTPException(status_code=401, detail="Authentication error")
+from auth import get_current_user
 
 @app.post('/signup')
 async def signup(
