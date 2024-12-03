@@ -1,8 +1,12 @@
 import os
-from fastapi import FastAPI, File, Form, UploadFile, Depends, HTTPException, status, Request, BackgroundTasks
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
+import logging
+import time
+import uuid
+import asyncio
+from typing import Optional, Dict, List
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form, Depends, status
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
@@ -10,7 +14,7 @@ from starlette.requests import Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from chatbot import Chatbot
 from token_middleware import validate_token_usage
-from database import get_user_token_balance
+from database import get_user_token_balance, update_token_usage
 from database import (
     create_user, get_user_by_email, insert_chat_message, get_chat_history,
     insert_video_analysis, get_video_analysis_history, check_user_exists,
@@ -21,16 +25,10 @@ from database import (
 from dotenv import load_dotenv
 import uvicorn
 from supabase.client import create_client, Client
-import uuid
-import logging
-from typing import List, Dict, Optional, Any
-from datetime import datetime, timedelta
-import time
 import jwt
 from fastapi.responses import Response
 from redis_storage import RedisFileStorage
 from redis_manager import RedisManager, TaskType, TaskPriority
-import asyncio
 import secrets
 import httpx
 from session_config import (
@@ -74,6 +72,7 @@ class ColoredFormatter(logging.Formatter):
         if 'HTTP Request:' in record.getMessage():
             log_fmt = self.green + self.format_str + self.reset
         formatter = logging.Formatter(log_fmt, datefmt='%Y-%m-%d %H:%M:%S')
+        return formatter.format(oauth2_scheme = OAuth2AuthorizationCodeBearer(tokenUrl="token"))
         return formatter.format(record)
 
     def format(self, record):
@@ -182,6 +181,7 @@ async def startup_event():
 origins = [
     "http://localhost:5173",
     "http://0.0.0.0:5173",
+    "*" #added for testing purposes
 ]
 
 app.add_middleware(
@@ -621,6 +621,24 @@ async def delete_conversation_endpoint(
             status_code=500,
             detail="An unexpected error occurred while deleting the conversation"
         )
+
+def convert_time_to_seconds(time_str: str) -> float:
+    """Convert HH:MM:SS format to seconds"""
+    try:
+        # Split the time string into components
+        parts = time_str.split(':')
+        if len(parts) == 3:
+            hours, minutes, seconds = parts
+            return float(hours) * 3600 + float(minutes) * 60 + float(seconds)
+        elif len(parts) == 2:
+            minutes, seconds = parts
+            return float(minutes) * 60 + float(seconds)
+        else:
+            return float(time_str)  # Assume it's already in seconds
+    except (ValueError, TypeError) as e:
+        logger.error(f"Error converting time to seconds: {str(e)}")
+        raise ValueError(f"Invalid time format: {time_str}")
+
 @app.post("/send_message")
 async def send_message(
     request: Request,
@@ -658,7 +676,8 @@ async def send_message(
                     
                     # Validate token usage for video duration
                     if metadata and 'duration' in metadata:
-                        video_duration = float(metadata['duration'])
+                        # Convert duration to seconds
+                        video_duration = convert_time_to_seconds(metadata['duration'])
                         user_id = uuid.UUID(user['id'])
                         
                         # Check if user has enough tokens
@@ -772,4 +791,4 @@ async def get_user_tokens(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=3000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8080, reload=True)

@@ -52,23 +52,55 @@ def validate_token_usage(video_duration: float = None):
                     )
 
                 try:
-                    # Convert user ID to UUID
-                    user_id = uuid.UUID(str(user_data['id']))
+                    # Extract and validate user ID
+                    user_id_str = str(user_data.get('id', ''))
+                    if not user_id_str:
+                        logger.error("User ID is missing from session data")
+                        raise ValueError("User ID is missing")
+                        
+                    try:
+                        user_id = uuid.UUID(user_id_str)
+                    except ValueError as e:
+                        logger.error(f"Invalid user ID format: {user_id_str}")
+                        raise ValueError(f"Invalid user ID format: {str(e)}")
+                        
+                    # Verify user exists in database
+                    if not await check_user_exists(user_id):
+                        logger.error(f"User {user_id} not found in database")
+                        raise ValueError("User not found in database")
+                        
                 except ValueError as e:
-                    logger.error(f"Invalid user ID format: {str(e)}")
+                    logger.error(f"User validation failed: {str(e)}")
                     raise HTTPException(
                         status_code=400,
-                        detail="Invalid user ID format"
+                        detail=str(e)
                     )
 
                 # Calculate required tokens based on video duration (1 token per second)
                 total_required_tokens = 0
                 if video_duration is not None:
                     try:
-                        total_required_tokens = int(video_duration)  # 1 token per second
+                        if isinstance(video_duration, str):
+                            # If duration is in HH:MM:SS format, convert to seconds
+                            parts = video_duration.split(':')
+                            if len(parts) == 3:
+                                hours, minutes, seconds = map(float, parts)
+                                total_required_tokens = int(hours * 3600 + minutes * 60 + seconds)
+                            elif len(parts) == 2:
+                                minutes, seconds = map(float, parts)
+                                total_required_tokens = int(minutes * 60 + seconds)
+                            else:
+                                total_required_tokens = int(float(video_duration))
+                        else:
+                            total_required_tokens = int(float(video_duration))
+                            
+                        logger.info(f"Calculated token requirement: {total_required_tokens} tokens for duration: {video_duration}")
                     except (ValueError, TypeError) as e:
                         logger.warning(f"Could not calculate token cost from video duration: {str(e)}")
-                        total_required_tokens = 0
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Invalid video duration format: {video_duration}"
+                        )
 
                 # Check token balance
                 if not await check_token_balance(user_id, total_required_tokens):
