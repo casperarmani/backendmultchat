@@ -657,7 +657,7 @@ async def delete_conversation_endpoint(
             detail="An unexpected error occurred while deleting the conversation"
         )
 @app.post("/send_message")
-@validate_token_usage(required_tokens=10, per_minute_tokens=5)  # Base cost: 10 tokens, 5 tokens per minute
+@validate_token_usage(required_tokens=10, per_minute_tokens=10)  # Base cost: 10 tokens, 10 tokens per minute of video
 async def send_message(
     request: Request,
     message: str = Form(...),
