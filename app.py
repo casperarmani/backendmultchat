@@ -15,7 +15,8 @@ from database import (
     create_user, get_user_by_email, insert_chat_message, get_chat_history,
     insert_video_analysis, get_video_analysis_history, check_user_exists,
     get_user_conversations, create_conversation, get_conversation_messages,
-    update_conversation_title, delete_conversation
+    update_conversation_title, delete_conversation, get_user_token_balance,
+    get_user_subscription_tier
 )
 from dotenv import load_dotenv
 import uvicorn
@@ -766,6 +767,25 @@ async def send_message(
         
     except Exception as e:
         logger.error(f"Error processing message: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/user/tokens")
+async def get_user_tokens(request: Request):
+    """Get user's token balance and subscription information"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    try:
+        token_balance = await get_user_token_balance(uuid.UUID(user['id']))
+        subscription = await get_user_subscription_tier(uuid.UUID(user['id']))
+        
+        return JSONResponse(content={
+            "token_balance": token_balance,
+            "subscription": subscription
+        })
+    except Exception as e:
+        logger.error(f"Error getting user tokens: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
