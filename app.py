@@ -622,7 +622,6 @@ async def delete_conversation_endpoint(
             detail="An unexpected error occurred while deleting the conversation"
         )
 @app.post("/send_message")
-@validate_token_usage(required_tokens=10, per_minute_tokens=5)  # Base cost: 10 tokens, 5 tokens per minute
 async def send_message(
     request: Request,
     message: str = Form(...),
@@ -650,11 +649,30 @@ async def send_message(
                 )
                 
                 if await redis_storage.store_file(file_id, content):
+                    # Get video duration from metadata (assuming chatbot.analyze_video returns duration)
                     analysis_text, metadata = await chatbot.analyze_video(
                         file_id=file_id,
                         filename=video.filename,
                         conversation_id=conversation_id
                     )
+                    
+                    # Validate token usage for video duration
+                    if metadata and 'duration' in metadata:
+                        video_duration = float(metadata['duration'])
+                        user_id = uuid.UUID(user['id'])
+                        
+                        # Check if user has enough tokens
+                        current_balance = await get_user_token_balance(user_id)
+                        tokens_needed = int(video_duration)  # 1 token per second
+                        
+                        if current_balance < tokens_needed:
+                            raise HTTPException(
+                                status_code=402,
+                                detail=f"Insufficient tokens. Required: {tokens_needed}, Available: {current_balance}"
+                            )
+                        
+                        # Deduct tokens for video processing
+                        await update_token_usage(user_id, tokens_needed)
                     
                     # Queue analysis task
                     redis_manager.enqueue_task(

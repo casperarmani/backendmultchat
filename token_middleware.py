@@ -17,13 +17,12 @@ async def check_token_balance(user_id: uuid.UUID, required_tokens: int) -> bool:
         logger.error(f"Error checking token balance: {str(e)}")
         return False
 
-def validate_token_usage(required_tokens: int = 0, per_minute_tokens: int = 0):
+def validate_token_usage(video_duration: float = None):
     """
     Decorator to validate token usage before executing an operation
     
     Args:
-        required_tokens (int): Base token cost for the operation
-        per_minute_tokens (int): Additional tokens per minute of video
+        video_duration (float): Duration of video in seconds, if None then no tokens are charged
     """
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
@@ -62,14 +61,14 @@ def validate_token_usage(required_tokens: int = 0, per_minute_tokens: int = 0):
                         detail="Invalid user ID format"
                     )
 
-                # Calculate total required tokens including video duration if applicable
-                total_required_tokens = required_tokens
-                if per_minute_tokens > 0 and 'video_duration' in kwargs:
+                # Calculate required tokens based on video duration (1 token per second)
+                total_required_tokens = 0
+                if video_duration is not None:
                     try:
-                        duration_minutes = float(kwargs['video_duration'])
-                        total_required_tokens += int(duration_minutes * per_minute_tokens)
+                        total_required_tokens = int(video_duration)  # 1 token per second
                     except (ValueError, TypeError) as e:
-                        logger.warning(f"Could not calculate per-minute token cost: {str(e)}")
+                        logger.warning(f"Could not calculate token cost from video duration: {str(e)}")
+                        total_required_tokens = 0
 
                 # Check token balance
                 if not await check_token_balance(user_id, total_required_tokens):
