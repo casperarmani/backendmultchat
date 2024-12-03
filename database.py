@@ -217,7 +217,7 @@ async def get_user_token_balance(user_id: uuid.UUID) -> int:
             balance = response.data[0]["tokens"]
 
         # Cache the result for 30 seconds
-        redis_manager.set_cache(cache_key, balance, expire=30)
+        redis_manager.set_cache(cache_key, balance, ttl=30)
         return balance
     except Exception as e:
         logger.error(f"Error getting user token balance: {str(e)}")
@@ -244,7 +244,7 @@ async def update_token_usage(user_id: uuid.UUID, tokens_used: int) -> None:
         }).eq("user_id", str(user_id)).execute()
         
         # Update cache with new balance
-        redis_manager.set_cache(cache_key, new_balance, expire=30)
+        redis_manager.set_cache(cache_key, new_balance, ttl=30)
         
         # Invalidate any related caches
         subscription_cache_key = f"subscription:{str(user_id)}"
