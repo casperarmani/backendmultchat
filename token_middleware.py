@@ -3,7 +3,7 @@ from typing import Callable, Any, Optional
 from fastapi import HTTPException, Request
 import uuid
 import logging
-from database import get_user_token_balance, update_token_usage
+from database import get_user_token_balance, update_token_usage, check_user_exists
 from auth import get_current_user
 
 logger = logging.getLogger(__name__)
