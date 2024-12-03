@@ -196,3 +196,77 @@ async def delete_conversation(conversation_id: uuid.UUID) -> bool:
         raise ValueError(f"An unexpected error occurred while deleting the conversation: {str(e)}")
 
 # End of file
+async def get_user_token_balance(user_id: uuid.UUID) -> int:
+    """Get the current token balance for a user"""
+    try:
+        response = supabase.table("user_tokens").select("tokens").eq("user_id", str(user_id)).execute()
+        if not response.data:
+            # Initialize tokens if user doesn't have any
+            await initialize_user_tokens(user_id)
+            return 0
+        return response.data[0]["tokens"]
+    except Exception as e:
+        logger.error(f"Error getting user token balance: {str(e)}")
+        raise ValueError(f"Failed to get token balance: {str(e)}")
+
+async def update_token_usage(user_id: uuid.UUID, tokens_used: int) -> None:
+    """Update token usage for a user"""
+    try:
+        # Record token usage
+        supabase.table("token_usage").insert({
+            "user_id": str(user_id),
+            "tokens_used": tokens_used,
+        }).execute()
+
+        # Update user's token balance
+        current_balance = await get_user_token_balance(user_id)
+        new_balance = max(0, current_balance - tokens_used)
+        
+        supabase.table("user_tokens").update({
+            "tokens": new_balance,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("user_id", str(user_id)).execute()
+    except Exception as e:
+        logger.error(f"Error updating token usage: {str(e)}")
+        raise ValueError(f"Failed to update token usage: {str(e)}")
+
+async def get_user_subscription_tier(user_id: uuid.UUID) -> Dict:
+    """Get the subscription tier details for a user"""
+    try:
+        response = supabase.table("user_tokens").select(
+            "subscription_tier_id, subscription_tiers(tier_name, tokens, price)"
+        ).eq("user_id", str(user_id)).execute()
+        
+        if not response.data:
+            # Initialize with default tier if not found
+            await initialize_user_tokens(user_id)
+            response = supabase.table("user_tokens").select(
+                "subscription_tier_id, subscription_tiers(tier_name, tokens, price)"
+            ).eq("user_id", str(user_id)).execute()
+            
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error getting user subscription tier: {str(e)}")
+        raise ValueError(f"Failed to get subscription tier: {str(e)}")
+
+async def initialize_user_tokens(user_id: uuid.UUID, tier_id: int = 1) -> None:
+    """Initialize tokens for a new user with default subscription tier"""
+    try:
+        # Get the token amount for the tier
+        tier_response = supabase.table("subscription_tiers").select("tokens").eq("id", tier_id).execute()
+        if not tier_response.data:
+            raise ValueError(f"Subscription tier {tier_id} not found")
+            
+        initial_tokens = tier_response.data[0]["tokens"]
+        
+        # Create user_tokens entry
+        supabase.table("user_tokens").insert({
+            "user_id": str(user_id),
+            "subscription_tier_id": tier_id,
+            "tokens": initial_tokens,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).execute()
+    except Exception as e:
+        logger.error(f"Error initializing user tokens: {str(e)}")
+        raise ValueError(f"Failed to initialize user tokens: {str(e)}")

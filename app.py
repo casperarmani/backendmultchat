@@ -9,6 +9,8 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from chatbot import Chatbot
+from token_middleware import validate_token_usage
+from database import get_user_token_balance
 from database import (
     create_user, get_user_by_email, insert_chat_message, get_chat_history,
     insert_video_analysis, get_video_analysis_history, check_user_exists,
@@ -654,6 +656,7 @@ async def delete_conversation_endpoint(
             detail="An unexpected error occurred while deleting the conversation"
         )
 @app.post("/send_message")
+@validate_token_usage(required_tokens=10, per_minute_tokens=5)  # Base cost: 10 tokens, 5 tokens per minute
 async def send_message(
     request: Request,
     message: str = Form(...),
@@ -752,9 +755,13 @@ async def send_message(
         user_cache_key = f"chat_history:{user['id']}"
         redis_manager.invalidate_cache(user_cache_key)
         
+        # Get updated token balance
+        token_balance = await get_user_token_balance(uuid.UUID(user['id']))
+        
         return JSONResponse(content={
             "response": response_text,
-            "conversation_id": str(conv_id) if conv_id else None
+            "conversation_id": str(conv_id) if conv_id else None,
+            "token_balance": token_balance
         })
         
     except Exception as e:
