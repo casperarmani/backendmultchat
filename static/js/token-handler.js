@@ -8,6 +8,9 @@ class TokenHandler {
         this.updateInterval = null;
         this.isLoginTransition = false;
         this.initialFetchDelay = 2000; // 2 seconds delay for initial fetch
+        this.cachedTokenInfo = null;
+        this.lastFetchTime = 0;
+        this.cacheDuration = 30000; // 30 seconds cache duration
     }
 
     async fetchTokenInfo(forceRefresh = false) {
@@ -17,6 +20,12 @@ class TokenHandler {
             return null;
         }
 
+        // Cache check (if not forcing refresh)
+        if (!forceRefresh && this.cachedTokenInfo && (Date.now() - this.lastFetchTime) < 30000) {
+            this.updateDisplaysFromCache();
+            return this.cachedTokenInfo;
+        }
+
         // Don't fetch if not authenticated unless forced
         if (!this.isAuthenticated && !forceRefresh) {
             this.updateDisplays('Not logged in', 'Not logged in');
@@ -24,9 +33,20 @@ class TokenHandler {
         }
 
         try {
-            const response = await fetch('/user/tokens');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+            const response = await fetch('/user/tokens', {
+                signal: controller.signal,
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+
+            clearTimeout(timeoutId);
+
             if (response.status === 401) {
-                // Only update display if not in login transition
                 if (!this.isLoginTransition) {
                     this.isAuthenticated = false;
                     this.updateDisplays('Not logged in', 'Not logged in');
@@ -40,6 +60,11 @@ class TokenHandler {
             }
 
             const data = await response.json();
+            
+            // Cache the successful response
+            this.cachedTokenInfo = data;
+            this.lastFetchTime = Date.now();
+            
             this.updateDisplays(
                 `${data.token_balance} tokens`,
                 data.subscription && data.subscription.subscription_tiers
@@ -50,19 +75,42 @@ class TokenHandler {
             this.retryCount = 0; // Reset retry count on success
             return data;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                console.warn('Token fetch request timed out');
+            }
+            
             // Don't show errors during login transition
             if (!this.isLoginTransition) {
                 console.error('Error fetching token information:', error);
                 
                 if (this.retryCount < this.maxRetries) {
                     this.retryCount++;
-                    await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+                    const backoffDelay = this.retryDelay * Math.pow(2, this.retryCount - 1);
+                    await new Promise(resolve => setTimeout(resolve, backoffDelay));
                     return this.fetchTokenInfo(forceRefresh);
+                }
+                
+                // If we have cached data, use it as fallback
+                if (this.cachedTokenInfo) {
+                    console.log('Using cached token information as fallback');
+                    this.updateDisplaysFromCache();
+                    return this.cachedTokenInfo;
                 }
                 
                 this.updateDisplays('Error loading balance', 'Error loading plan');
             }
             return null;
+        }
+    }
+
+    updateDisplaysFromCache() {
+        if (this.cachedTokenInfo) {
+            this.updateDisplays(
+                `${this.cachedTokenInfo.token_balance} tokens`,
+                this.cachedTokenInfo.subscription && this.cachedTokenInfo.subscription.subscription_tiers
+                    ? `${this.cachedTokenInfo.subscription.subscription_tiers.tier_name} (${this.cachedTokenInfo.subscription.subscription_tiers.tokens} tokens/month)`
+                    : 'No subscription'
+            );
         }
     }
 

@@ -197,20 +197,34 @@ async def delete_conversation(conversation_id: uuid.UUID) -> bool:
 
 # End of file
 async def get_user_token_balance(user_id: uuid.UUID) -> int:
-    """Get the current token balance for a user"""
+    """Get the current token balance for a user with Redis caching"""
     try:
+        # Try to get from cache first
+        cache_key = f"token_balance:{str(user_id)}"
+        cached_balance = redis_manager.get_cache(cache_key)
+        
+        if cached_balance is not None:
+            logger.debug(f"Returning cached token balance for user {user_id}")
+            return cached_balance
+
+        # If not in cache, get from database
         response = supabase.table("user_tokens").select("tokens").eq("user_id", str(user_id)).execute()
         if not response.data:
             # Initialize tokens if user doesn't have any
             await initialize_user_tokens(user_id)
-            return 0
-        return response.data[0]["tokens"]
+            balance = 0
+        else:
+            balance = response.data[0]["tokens"]
+
+        # Cache the result for 30 seconds
+        redis_manager.set_cache(cache_key, balance, expire=30)
+        return balance
     except Exception as e:
         logger.error(f"Error getting user token balance: {str(e)}")
         raise ValueError(f"Failed to get token balance: {str(e)}")
 
 async def update_token_usage(user_id: uuid.UUID, tokens_used: int) -> None:
-    """Update token usage for a user"""
+    """Update token usage for a user with cache invalidation"""
     try:
         # Record token usage
         supabase.table("token_usage").insert({
@@ -219,13 +233,23 @@ async def update_token_usage(user_id: uuid.UUID, tokens_used: int) -> None:
         }).execute()
 
         # Update user's token balance
+        cache_key = f"token_balance:{str(user_id)}"
         current_balance = await get_user_token_balance(user_id)
         new_balance = max(0, current_balance - tokens_used)
         
+        # Update database
         supabase.table("user_tokens").update({
             "tokens": new_balance,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("user_id", str(user_id)).execute()
+        
+        # Update cache with new balance
+        redis_manager.set_cache(cache_key, new_balance, expire=30)
+        
+        # Invalidate any related caches
+        subscription_cache_key = f"subscription:{str(user_id)}"
+        redis_manager.invalidate_cache(subscription_cache_key)
+        
     except Exception as e:
         logger.error(f"Error updating token usage: {str(e)}")
         raise ValueError(f"Failed to update token usage: {str(e)}")
