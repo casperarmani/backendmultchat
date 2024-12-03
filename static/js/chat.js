@@ -74,6 +74,21 @@ function updateUploadStatus() {
     }
 }
 
+async function updateTokenInfo() {
+    try {
+        const response = await fetch('/user/tokens');
+        const data = await response.json();
+        
+        document.getElementById('current-tokens').textContent = `${data.token_balance} tokens`;
+        document.getElementById('current-plan').textContent = 
+            `${data.subscription.subscription_tiers.tier_name} Plan - ${data.subscription.subscription_tiers.tokens} tokens`;
+    } catch (error) {
+        console.error('Error fetching token info:', error);
+        document.getElementById('current-tokens').textContent = 'Error loading tokens';
+        document.getElementById('current-plan').textContent = 'Error loading plan';
+    }
+}
+
 async function initChat() {
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
@@ -83,6 +98,9 @@ async function initChat() {
     
     videoUpload.addEventListener('change', handleFileSelect);
     initializeMessageObserver();
+    
+    // Initialize token info
+    await updateTokenInfo();
 
     const conversationsContainer = document.createElement('div');
     conversationsContainer.className = 'conversations-container';
