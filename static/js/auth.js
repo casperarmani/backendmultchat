@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await api.signup(email, password);
             signupForm.reset();
             await checkAuthStatus(); // This will show the app section and initialize chat
+            await updateTokenInfo(); // Update token information after successful signup
         } catch (error) {
             utils.showError(error.message || 'Signup failed');
         }
@@ -51,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await api.login(email, password);
             await checkAuthStatus();
+            await updateTokenInfo(); // Update token information after successful login
         } catch (error) {
             utils.showError('Login failed. Please check your credentials.');
         }
