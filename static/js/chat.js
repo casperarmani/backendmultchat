@@ -9,8 +9,8 @@ window.messageObserver = null;
 window.lastMessageTimestamp = null;
 window.retryCount = 0;
 const MAX_RETRIES = 3;
-const INITIAL_POLL_INTERVAL = 1000;
-const MAX_POLL_INTERVAL = 10000;
+const INITIAL_POLL_INTERVAL = 1000; // 1 second
+const MAX_POLL_INTERVAL = 1000;     // Keep consistent at 1 second
 const BATCH_SIZE = 20;
 const RETRY_DELAY = 1000;
 
@@ -240,9 +240,8 @@ function startPolling(interval) {
             } else {
                 consecutiveEmptyResponses++;
                 // Increase polling interval after consecutive empty responses
-                if (consecutiveEmptyResponses > 5 && interval < MAX_POLL_INTERVAL) {
-                    clearInterval(currentPollInterval);
-                    startPolling(Math.min(interval * 1.5, MAX_POLL_INTERVAL));
+                if (consecutiveEmptyResponses > 20) { // Increased threshold since we're polling more frequently
+                    consecutiveEmptyResponses = 0;    // Reset counter but maintain polling rate
                 }
             }
         } catch (error) {
