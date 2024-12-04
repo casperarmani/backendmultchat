@@ -17,17 +17,59 @@ const RETRY_DELAY = 1000;
 // File upload handling
 let selectedFiles = new Set();
 
-function handleFileSelect(event) {
+async function validateVideo(file) {
+    return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+
+        video.onloadedmetadata = function() {
+            window.URL.revokeObjectURL(video.src);
+            resolve(video.duration);
+        };
+
+        video.onerror = function() {
+            window.URL.revokeObjectURL(video.src);
+            reject(new Error('Error loading video metadata'));
+        };
+
+        video.src = URL.createObjectURL(file);
+    });
+}
+
+async function handleFileSelect(event) {
     const files = Array.from(event.target.files);
     const uploadPreview = document.querySelector('.upload-preview') || createUploadPreview();
+    const currentTokens = parseInt(document.getElementById('current-tokens').textContent);
     
-    files.forEach(file => {
-        if (!selectedFiles.has(file)) {
-            selectedFiles.add(file);
-            const fileItem = createFilePreviewItem(file);
-            uploadPreview.appendChild(fileItem);
+    for (const file of files) {
+        if (!file.type.startsWith('video/')) {
+            utils.showError('Only video files are supported');
+            continue;
         }
-    });
+
+        try {
+            const duration = await validateVideo(file);
+            const requiredTokens = Math.ceil(duration);
+
+            if (requiredTokens > currentTokens) {
+                utils.showError(`Video duration (${Math.ceil(duration)}s) exceeds available tokens (${currentTokens}). Please upload a shorter video or get more tokens.`);
+                continue;
+            }
+
+            if (!selectedFiles.has(file)) {
+                selectedFiles.add(file);
+                const fileItem = createFilePreviewItem(file);
+                const durationSpan = document.createElement('span');
+                durationSpan.className = 'file-duration';
+                durationSpan.textContent = ` (${Math.ceil(duration)}s)`;
+                fileItem.querySelector('.file-name').appendChild(durationSpan);
+                uploadPreview.appendChild(fileItem);
+            }
+        } catch (error) {
+            utils.showError('Error validating video: ' + error.message);
+            continue;
+        }
+    }
     
     updateUploadStatus();
 }
@@ -64,10 +106,20 @@ function removeFile(file, fileItem) {
     updateUploadStatus();
 }
 
-function updateUploadStatus() {
+async function updateUploadStatus() {
     const uploadStatus = document.getElementById('upload-status');
     if (selectedFiles.size > 0) {
-        uploadStatus.textContent = `${selectedFiles.size} file(s) selected`;
+        let totalDuration = 0;
+        for (const file of selectedFiles) {
+            try {
+                const duration = await validateVideo(file);
+                totalDuration += Math.ceil(duration);
+            } catch (error) {
+                console.error('Error calculating duration:', error);
+            }
+        }
+        const currentTokens = parseInt(document.getElementById('current-tokens').textContent);
+        uploadStatus.textContent = `${selectedFiles.size} file(s) selected - Total duration: ${totalDuration}s (${totalDuration} tokens required, ${currentTokens} available)`;
         uploadStatus.className = 'upload-status';
     } else {
         uploadStatus.textContent = '';
