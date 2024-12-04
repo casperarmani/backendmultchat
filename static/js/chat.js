@@ -398,12 +398,38 @@ function cleanupChat() {
         messageObserver.disconnect();
     }
     
-    chatHistory = [];
-    lastMessageTimestamp = null;
-    retryCount = 0;
+    // Reset all chat-related state
+    window.chatHistory = [];
+    window.analysisHistory = [];
+    window.conversations = [];
+    window.currentConversationId = null;
+    window.lastMessageTimestamp = null;
+    window.retryCount = 0;
     
+    // Clear UI elements
     if (chatHistoryContainer) {
         chatHistoryContainer.innerHTML = '';
+    }
+    
+    const conversationsList = document.getElementById('conversations-list');
+    if (conversationsList) {
+        conversationsList.innerHTML = '';
+    }
+    
+    const analysisContainer = document.getElementById('analysis-history');
+    if (analysisContainer) {
+        analysisContainer.innerHTML = '';
+    }
+    
+    // Reset file upload state
+    selectedFiles.clear();
+    const uploadPreview = document.querySelector('.upload-preview');
+    if (uploadPreview) {
+        uploadPreview.innerHTML = '';
+    }
+    const uploadStatus = document.getElementById('upload-status');
+    if (uploadStatus) {
+        uploadStatus.textContent = '';
     }
 }
 
