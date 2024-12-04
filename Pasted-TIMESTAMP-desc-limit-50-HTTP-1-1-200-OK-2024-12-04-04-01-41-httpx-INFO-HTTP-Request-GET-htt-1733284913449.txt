@@ -1,0 +1,11 @@
+TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:41 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:42 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:43 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:44 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:45 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:46 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:47 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:48 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:49 - httpx - INFO - HTTP Request: GET https://xghbfotsivdbuqvumyyu.supabase.co/rest/v1/user_chat_history?select=%2A&conversation_id=eq.18f86494-80a4-4c50-8d4f-0f980bf291d5&order=TIMESTAMP.desc&limit=50 "HTTP/1.1 200 OK"
+2024-12-04 04:01:50 - httpx - INFO - HTTP Request: GET https://xg

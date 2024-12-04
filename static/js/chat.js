@@ -215,7 +215,7 @@ function startPolling(interval) {
     }
     
     let isPolling = false;
-    let consecutiveEmptyResponses = 0;
+    let consecutiveEmptyResponses = chatHistory.length === 0 ? 5 : 0;  // Start higher for empty chats
     currentPollInterval = setInterval(async () => {
         if (isPolling || !currentConversationId) return;
         
@@ -355,7 +355,13 @@ async function switchConversation(conversationId) {
         
         initializeMessageObserver();
         await loadConversationMessages(conversationId);
-        resetPolling();
+        
+        // Start with a higher polling interval for new/empty conversations
+        if (chatHistory.length === 0) {
+            startPolling(MAX_POLL_INTERVAL);
+        } else {
+            resetPolling();
+        }
         
         const messageInput = document.getElementById('message-input');
         if (messageInput) {
