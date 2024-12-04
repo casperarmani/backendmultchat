@@ -215,6 +215,7 @@ function startPolling(interval) {
     }
     
     let isPolling = false;
+    let consecutiveEmptyResponses = 0;
     currentPollInterval = setInterval(async () => {
         if (isPolling || !currentConversationId) return;
         
@@ -223,6 +224,7 @@ function startPolling(interval) {
             const newMessages = await fetchNewMessages();
             
             if (newMessages?.length > 0) {
+                consecutiveEmptyResponses = 0;
                 const uniqueMessages = newMessages.filter(msg => 
                     !chatHistory.some(existing => 
                         existing.TIMESTAMP === msg.TIMESTAMP && 
@@ -234,6 +236,13 @@ function startPolling(interval) {
                     chatHistory = [...chatHistory, ...uniqueMessages];
                     lastMessageTimestamp = uniqueMessages[uniqueMessages.length - 1].TIMESTAMP;
                     renderChatHistory();
+                }
+            } else {
+                consecutiveEmptyResponses++;
+                // Increase polling interval after consecutive empty responses
+                if (consecutiveEmptyResponses > 5 && interval < MAX_POLL_INTERVAL) {
+                    clearInterval(currentPollInterval);
+                    startPolling(Math.min(interval * 1.5, MAX_POLL_INTERVAL));
                 }
             }
         } catch (error) {
@@ -276,13 +285,20 @@ async function fetchNewMessages() {
         }
         return [];
     } catch (error) {
+        // Silent handling for expected polling scenarios
         if (error.message?.includes('No new messages') || 
             error.message?.includes('polling timeout') ||
             error.message?.includes('conversation not found') ||
-            error.message?.includes('Network request failed')) {
+            error.message?.includes('Network request failed') ||
+            error.message?.includes('200 OK')) {
             return [];
         }
-        throw error;
+        // Only throw unexpected errors
+        if (!error.message?.toLowerCase().includes('polling') && 
+            !error.message?.toLowerCase().includes('timeout')) {
+            throw error;
+        }
+        return [];
     }
 }
 
