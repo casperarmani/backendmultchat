@@ -84,11 +84,13 @@ class ColoredFormatter(logging.Formatter):
 # Suppress logs for polling endpoints while keeping format for others
 class EndpointFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        # Only filter out the polling endpoint logs
-        # Keep all other logs like health checks, message sending, etc.
+        message = record.getMessage()
+        # Filter out polling endpoint logs and their corresponding Supabase requests
         return not (
-            "GET /conversations/" in record.getMessage() and 
-            "/messages" in record.getMessage()
+            ("GET /conversations/" in message and "/messages" in message) or
+            ("HTTP Request: GET" in message and 
+             "user_chat_history" in message and 
+             "order=TIMESTAMP.desc" in message)
         )
 
 # Apply custom formatting to logger
@@ -96,9 +98,12 @@ handler = logging.StreamHandler()
 handler.setFormatter(ColoredFormatter())
 logging.getLogger().handlers = [handler]
 
-# Apply filter to access logs
+# Apply filter to both access logs and httpx logs
+endpoint_filter = EndpointFilter()
 uvicorn_access = logging.getLogger("uvicorn.access")
-uvicorn_access.addFilter(EndpointFilter())
+uvicorn_access.addFilter(endpoint_filter)
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.addFilter(endpoint_filter)
 
 load_dotenv()
 
