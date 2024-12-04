@@ -288,9 +288,24 @@ button:hover {
 
 .upload-status {
     margin-top: 0.5rem;
-    padding: 0.5rem;
+    padding: 1rem;
     border-radius: 4px;
     font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+.progress-container {
+    background: white;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-text {
+    color: #0056b3;
+    font-size: 0.95rem;
+    text-align: center;
 }
 
 .upload-status.uploading {

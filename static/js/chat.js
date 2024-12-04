@@ -210,13 +210,22 @@ async function initChat() {
             messageInput.disabled = true;
             
             if (videos.length) {
+                const uploadStatus = document.getElementById('upload-status');
+                if (!uploadStatus) return;
+                
                 uploadStatus.innerHTML = ''; // Clear any existing content
+                uploadStatus.style.display = 'block'; // Ensure visibility
+                
                 const progressContainer = document.createElement('div');
+                progressContainer.className = 'progress-container';
                 progressContainer.style.width = '100%';
+                progressContainer.style.marginBottom = '15px';
                 
                 const progressText = document.createElement('div');
+                progressText.className = 'progress-text';
                 progressText.textContent = 'Uploading video...';
                 progressText.style.marginBottom = '8px';
+                progressText.style.fontWeight = '500';
                 
                 const progressBar = document.createElement('div');
                 progressBar.className = 'upload-progress-bar';
