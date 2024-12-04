@@ -677,7 +677,8 @@ async def send_message(
                     analysis_text, metadata = await chatbot.analyze_video(
                         file_id=file_id,
                         filename=video.filename,
-                        conversation_id=conversation_id
+                        conversation_id=conversation_id,
+                        user_id=user["id"]
                     )
                     
                     # Validate token usage for video duration
