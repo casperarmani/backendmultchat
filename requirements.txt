@@ -23,12 +23,3 @@ cryptography
 passlib
 python-jose
 
-fastapi
-google-generativeai
-httpx
-moviepy
-python-dotenv
-redis
-starlette
-supabase
-uvicorn
