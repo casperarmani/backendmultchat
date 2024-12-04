@@ -158,7 +158,7 @@ async def startup_event():
                     
                     if user_id and message:
                         # Process the message with chatbot
-                        response_text = await chatbot.send_message(message, conversation_id)
+                        response_text = await chatbot.send_message(message, conversation_id, user_id)
                         
                         # Store bot response
                         conv_id = uuid.UUID(conversation_id) if conversation_id else None
