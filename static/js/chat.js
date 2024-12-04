@@ -142,11 +142,24 @@ async function updateTokenInfo() {
 }
 
 async function initChat() {
+    // Reset all chat state
+    window.chatHistory = [];
+    window.analysisHistory = [];
+    window.conversations = [];
+    window.currentConversationId = null;
+    window.lastMessageTimestamp = null;
+    window.retryCount = 0;
+    
     const chatForm = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');
     const videoUpload = document.getElementById('video-upload');
     const uploadStatus = document.getElementById('upload-status');
     window.chatHistoryContainer = document.getElementById('chat-history');
+    
+    if (window.currentPollInterval) {
+        clearInterval(window.currentPollInterval);
+        window.currentPollInterval = null;
+    }
     
     videoUpload.addEventListener('change', handleFileSelect);
     initializeMessageObserver();

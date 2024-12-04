@@ -61,6 +61,18 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', async () => {
         try {
             await api.logout();
+            // Clean up chat state
+            window.chatHistory = [];
+            window.analysisHistory = [];
+            window.conversations = [];
+            window.currentConversationId = null;
+            if (window.chatHistoryContainer) {
+                window.chatHistoryContainer.innerHTML = '';
+            }
+            if (window.currentPollInterval) {
+                clearInterval(window.currentPollInterval);
+                window.currentPollInterval = null;
+            }
             utils.showSection('login-section');
         } catch (error) {
             utils.showError('Logout failed.');
