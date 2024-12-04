@@ -208,9 +208,43 @@ async function initChat() {
 
         try {
             messageInput.disabled = true;
-            uploadStatus.textContent = videos.length ? 'Uploading...' : '';
+            
+            if (videos.length) {
+                const progressBar = document.createElement('div');
+                progressBar.className = 'upload-progress-bar';
+                const progressFill = document.createElement('div');
+                progressFill.className = 'progress-fill';
+                progressBar.appendChild(progressFill);
+                uploadStatus.textContent = '';
+                uploadStatus.appendChild(progressBar);
+                
+                // Start cosmetic loading animation
+                const startTime = Date.now();
+                const duration = 25000; // 25 seconds
+                const animateProgress = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min((elapsed / duration) * 100, 98); // Max at 98% until complete
+                    progressFill.style.width = `${progress}%`;
+                    if (elapsed < duration) {
+                        requestAnimationFrame(animateProgress);
+                    }
+                };
+                requestAnimationFrame(animateProgress);
+            }
 
             const response = await api.sendMessage(message, videos, currentConversationId);
+            
+            // Complete the progress bar immediately after response
+            if (videos.length) {
+                const progressFill = uploadStatus.querySelector('.progress-fill');
+                if (progressFill) {
+                    progressFill.style.width = '100%';
+                    progressFill.style.transition = 'width 0.3s ease-out';
+                    setTimeout(() => {
+                        uploadStatus.textContent = '';
+                    }, 500);
+                }
+            }
             
             messageInput.value = '';
             videoUpload.value = '';
