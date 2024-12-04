@@ -210,13 +210,23 @@ async function initChat() {
             messageInput.disabled = true;
             
             if (videos.length) {
+                uploadStatus.innerHTML = ''; // Clear any existing content
+                const progressContainer = document.createElement('div');
+                progressContainer.style.width = '100%';
+                
+                const progressText = document.createElement('div');
+                progressText.textContent = 'Uploading video...';
+                progressText.style.marginBottom = '8px';
+                
                 const progressBar = document.createElement('div');
                 progressBar.className = 'upload-progress-bar';
                 const progressFill = document.createElement('div');
                 progressFill.className = 'progress-fill';
+                
                 progressBar.appendChild(progressFill);
-                uploadStatus.textContent = '';
-                uploadStatus.appendChild(progressBar);
+                progressContainer.appendChild(progressText);
+                progressContainer.appendChild(progressBar);
+                uploadStatus.appendChild(progressContainer);
                 
                 // Start cosmetic loading animation
                 const startTime = Date.now();
@@ -225,6 +235,7 @@ async function initChat() {
                     const elapsed = Date.now() - startTime;
                     const progress = Math.min((elapsed / duration) * 100, 98); // Max at 98% until complete
                     progressFill.style.width = `${progress}%`;
+                    progressText.textContent = `Uploading video... ${Math.round(progress)}%`;
                     if (elapsed < duration) {
                         requestAnimationFrame(animateProgress);
                     }
