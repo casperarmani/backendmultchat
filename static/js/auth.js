@@ -60,16 +60,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     logoutBtn.addEventListener('click', async () => {
         try {
-            // Call cleanupChat before logout to ensure proper cleanup
-            if (typeof cleanupChat === 'function') {
-                cleanupChat();
-            }
-            
             await api.logout();
-            
-            // Reset any remaining state and show login section
-            localStorage.removeItem('auth');
-            sessionStorage.clear();
+            // Clean up chat state
+            window.chatHistory = [];
+            window.analysisHistory = [];
+            window.conversations = [];
+            window.currentConversationId = null;
+            if (window.chatHistoryContainer) {
+                window.chatHistoryContainer.innerHTML = '';
+            }
+            if (window.currentPollInterval) {
+                clearInterval(window.currentPollInterval);
+                window.currentPollInterval = null;
+            }
             utils.showSection('login-section');
         } catch (error) {
             utils.showError('Logout failed.');
