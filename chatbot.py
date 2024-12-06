@@ -34,7 +34,7 @@ if not redis_url:
 if not helicone_api_key:
     raise ValueError("No HELICONE_API_KEY found in environment variables. Please set it in your .env file.")
 
-# Configure the generative AI with Helicone
+# Initial genai configuration (base configuration without user_id or tag)
 genai.configure(
     api_key=api_key,
     client_options={
@@ -205,6 +205,21 @@ class Chatbot:
 
                 session = self._get_or_create_session(conversation_id, user_id)
 
+                # Reconfigure genai to include Helicone-User-Id and video_upload tag
+                genai.configure(
+                    api_key=api_key,
+                    client_options={
+                        'api_endpoint': 'gateway.helicone.ai',
+                    },
+                    default_metadata=[
+                        ('helicone-auth', f'Bearer {helicone_api_key}'),
+                        ('helicone-target-url', 'https://generativelanguage.googleapis.com'),
+                        ('Helicone-User-Id', user_id),
+                        ('helicone-tag', 'video_upload')
+                    ],
+                    transport="rest"
+                )
+
                 # Call send_message in a thread since it's synchronous
                 response = await asyncio.to_thread(session['chat_session'].send_message, [video_file, context_prompt])
                 response_text = self._format_response(response.text, filename)
@@ -231,7 +246,7 @@ class Chatbot:
             return f"An error occurred during video analysis: {str(e)}", None
 
     async def send_message(self, message: str, conversation_id: str, user_id: str) -> str:
-        """Send a message while maintaining context for specific conversation"""
+        """Send a message while maintaining context for a specific conversation"""
         try:
             session = self._get_or_create_session(conversation_id, user_id)
             self._add_to_history(conversation_id, "user", message, user_id)
@@ -243,7 +258,20 @@ class Chatbot:
                 f"\nUser's current message: {message}"
             )
 
-            # Wrap the synchronous send_message call
+            # Reconfigure genai to include Helicone-User-Id without the video_upload tag
+            genai.configure(
+                api_key=api_key,
+                client_options={
+                    'api_endpoint': 'gateway.helicone.ai',
+                },
+                default_metadata=[
+                    ('helicone-auth', f'Bearer {helicone_api_key}'),
+                    ('helicone-target-url', 'https://generativelanguage.googleapis.com'),
+                    ('Helicone-User-Id', user_id)
+                ],
+                transport="rest"
+            )
+
             response = await asyncio.to_thread(session['chat_session'].send_message, context_prompt)
             response_text = self._format_response(response.text)
 
