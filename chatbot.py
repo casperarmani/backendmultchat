@@ -34,7 +34,7 @@ if not redis_url:
 if not helicone_api_key:
     raise ValueError("No HELICONE_API_KEY found in environment variables. Please set it in your .env file.")
 
-# Initial genai configuration (base configuration without user_id or tag)
+# Initial genai configuration (no user_id or video_upload properties here)
 genai.configure(
     api_key=api_key,
     client_options={
@@ -205,7 +205,7 @@ class Chatbot:
 
                 session = self._get_or_create_session(conversation_id, user_id)
 
-                # Reconfigure genai to include Helicone-User-Id and video_upload tag
+                # Reconfigure genai to include Helicone-User-Id and video_upload property here
                 genai.configure(
                     api_key=api_key,
                     client_options={
@@ -215,7 +215,7 @@ class Chatbot:
                         ('helicone-auth', f'Bearer {helicone_api_key}'),
                         ('helicone-target-url', 'https://generativelanguage.googleapis.com'),
                         ('Helicone-User-Id', user_id),
-                        ('helicone-tag', 'video_upload')
+                        ('Helicone-Property-video_upload', 'true')
                     ],
                     transport="rest"
                 )
@@ -258,7 +258,7 @@ class Chatbot:
                 f"\nUser's current message: {message}"
             )
 
-            # Reconfigure genai to include Helicone-User-Id without the video_upload tag
+            # Reconfigure genai to include Helicone-User-Id only for normal messages
             genai.configure(
                 api_key=api_key,
                 client_options={
