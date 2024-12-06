@@ -74,7 +74,8 @@ class Chatbot:
         )
 
         # Store sessions with user and conversation isolation
-        self.sessions = {}  # Format: {f"{user_id}:{conversation_id}": session_data}
+        # We'll store whether we've configured Helicone for this user_id already.
+        self.sessions = {}  # {f"{user_id}:{conversation_id}": session_data}
         self.system_prompt = """You are an expert video and content analyzer. 
         Maintain context of ALL interactions including user information, previous chats, and video analyses. Always assume questions are about the most recently analyzed video unless another video is specifically referenced. Absolutely don't mention uploading any new videos if not asked. If asked to analyze or explain again, just explain again without mentioning it was done again. When referring to previous content, be specific about which video you're discussing.
         If you make a mistake, acknowledge it and correct yourself.
@@ -121,10 +122,31 @@ class Chatbot:
                 'chat_session': self.model.start_chat(history=[]),
                 'chat_history': [],
                 'video_contexts': [],
-                'user_id': user_id
+                'user_id': user_id,
+                'configured': False
             }
             self._add_to_history(conversation_id, "system", self.system_prompt, user_id)
-        return self.sessions[session_key]
+
+        session = self.sessions[session_key]
+
+        # If we haven't configured Helicone user property for this user's session yet, do it now.
+        if not session['configured']:
+            # Configure once per user session with Helicone-User-Id
+            genai.configure(
+                api_key=api_key,
+                client_options={
+                    'api_endpoint': 'gateway.helicone.ai',
+                },
+                default_metadata=[
+                    ('helicone-auth', f'Bearer {helicone_api_key}'),
+                    ('helicone-target-url', 'https://generativelanguage.googleapis.com'),
+                    ('Helicone-User-Id', user_id)
+                ],
+                transport="rest"
+            )
+            session['configured'] = True
+
+        return session
 
     def _add_to_history(self, conversation_id: str, role: str, content: str, user_id: str = None):
         """Add message to chat history with timezone-aware timestamp"""
@@ -191,21 +213,21 @@ class Chatbot:
                 )
 
                 logger.info("Waiting for video processing...")
+                # Reduced sleep from 2s to 1s to check more frequently for readiness
                 while video_file.state.name == "PROCESSING":
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(1)
                     video_file = genai.get_file(video_file.name)
 
                 if video_file.state.name == "FAILED":
                     raise ValueError(f"Video processing failed: {video_file.state.name}")
 
                 context_prompt = self._create_analysis_prompt(filename, metadata)
-
                 if prompt:
                     context_prompt += f"\n\nAdditional instructions: {prompt}"
 
                 session = self._get_or_create_session(conversation_id, user_id)
 
-                # Reconfigure genai to include Helicone-User-Id and video_upload property here
+                # Reconfigure once here for video analysis requests with video_upload property
                 genai.configure(
                     api_key=api_key,
                     client_options={
@@ -215,12 +237,11 @@ class Chatbot:
                         ('helicone-auth', f'Bearer {helicone_api_key}'),
                         ('helicone-target-url', 'https://generativelanguage.googleapis.com'),
                         ('Helicone-User-Id', user_id),
-                        ('Helicone-Property-video_upload', 'true')
+                        ('Helicone-Property-video_upload', 'video_upload')
                     ],
                     transport="rest"
                 )
 
-                # Call send_message in a thread since it's synchronous
                 response = await asyncio.to_thread(session['chat_session'].send_message, [video_file, context_prompt])
                 response_text = self._format_response(response.text, filename)
 
@@ -231,6 +252,22 @@ class Chatbot:
                     'analysis': response_text,
                     'metadata': metadata
                 })
+
+                # After this video analysis completes, we might want to restore the configuration without video_upload
+                # to avoid reconfiguration on next user message. However, if messages are frequent, consider caching.
+                # We'll restore default user config:
+                genai.configure(
+                    api_key=api_key,
+                    client_options={
+                        'api_endpoint': 'gateway.helicone.ai',
+                    },
+                    default_metadata=[
+                        ('helicone-auth', f'Bearer {helicone_api_key}'),
+                        ('helicone-target-url', 'https://generativelanguage.googleapis.com'),
+                        ('Helicone-User-Id', user_id)
+                    ],
+                    transport="rest"
+                )
 
                 return response_text, metadata
 
@@ -258,20 +295,7 @@ class Chatbot:
                 f"\nUser's current message: {message}"
             )
 
-            # Reconfigure genai to include Helicone-User-Id only for normal messages
-            genai.configure(
-                api_key=api_key,
-                client_options={
-                    'api_endpoint': 'gateway.helicone.ai',
-                },
-                default_metadata=[
-                    ('helicone-auth', f'Bearer {helicone_api_key}'),
-                    ('helicone-target-url', 'https://generativelanguage.googleapis.com'),
-                    ('Helicone-User-Id', user_id)
-                ],
-                transport="rest"
-            )
-
+            # Now that we configured user_id at session creation, no need to reconfigure here for normal messages
             response = await asyncio.to_thread(session['chat_session'].send_message, context_prompt)
             response_text = self._format_response(response.text)
 
