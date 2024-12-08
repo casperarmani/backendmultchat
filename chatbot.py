@@ -118,13 +118,19 @@ class Chatbot:
 
         session_key = f"{user_id}:{conversation_id}"
         if session_key not in self.sessions:
+            # Initialize chat session with system prompt
+            chat = self.model.start_chat(history=[])
+            # Send system prompt once at initialization
+            chat.send_message(self.system_prompt)
+            
             self.sessions[session_key] = {
-                'chat_session': self.model.start_chat(history=[]),
+                'chat_session': chat,
                 'chat_history': [],
                 'video_contexts': [],
                 'user_id': user_id,
                 'configured': False
             }
+            # Store system prompt in history for reference
             self._add_to_history(conversation_id, "system", self.system_prompt, user_id)
 
         session = self.sessions[session_key]
