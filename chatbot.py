@@ -288,14 +288,33 @@ class Chatbot:
             session = self._get_or_create_session(conversation_id, user_id)
             self._add_to_history(conversation_id, "user", message, user_id)
 
-            context_prompt = (
-                f"Remember these key points from our conversation:\n"
-                f"1. Previous messages: {session['chat_history'][-5:] if len(session['chat_history']) > 5 else session['chat_history']}\n"
-                f"2. Video contexts analyzed: {len(session['video_contexts'])} videos\n"
-                f"\nUser's current message: {message}"
-            )
+            # Get recent history excluding system prompts
+            recent_messages = []
+            history_count = 0
+            for msg in reversed(session['chat_history']):
+                if msg['content'] != self.system_prompt:
+                    recent_messages.append(msg)
+                    history_count += 1
+                    if history_count >= 5:
+                        break
+            recent_messages.reverse()
 
-            # Now that we configured user_id at session creation, no need to reconfigure here for normal messages
+            # Format message history for context
+            formatted_history = []
+            for msg in recent_messages:
+                role = "User" if msg['role'] == "user" else "Assistant"
+                formatted_history.append(f"{role}: {msg['content']}")
+            
+            context_prompt = message
+            if formatted_history:
+                context_prompt = (
+                    f"Previous conversation context:\n"
+                    f"{chr(10).join(formatted_history)}\n\n"
+                    f"Videos analyzed in this conversation: {len(session['video_contexts'])}\n\n"
+                    f"User's message: {message}"
+                )
+
+            # Send message with context
             response = await asyncio.to_thread(session['chat_session'].send_message, context_prompt)
             response_text = self._format_response(response.text)
 
