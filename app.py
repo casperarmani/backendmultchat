@@ -23,6 +23,7 @@ from database import (
     update_conversation_title, delete_conversation, get_user_token_balance,
     get_user_subscription_tier
 )
+import stripe
 from dotenv import load_dotenv
 import uvicorn
 from supabase.client import create_client, Client
@@ -40,6 +41,9 @@ from session_config import (
     COOKIE_SAMESITE,
     SESSION_CLEANUP_INTERVAL
 )
+
+# Configure stripe
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY") 
 
 # Configure logging with colors and formatting
 logging.basicConfig(
@@ -399,6 +403,84 @@ async def auth_status(request: Request):
 async def serve_static_app(request: Request):
     return FileResponse("static/index.html")
 
+@app.get("/api/check-stripe-customer")
+async def check_stripe_customer(request: Request):
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    stripe_customers = stripe.Customer.list(email=user['email'])
+    ## can enable for just test to delete customer
+    # for customer in stripe_customers['data']:
+    #         deleted_customer = stripe.Customer.delete(customer['id'])
+    is_customer = bool(stripe_customers.data)
+    return {"is_stripe_customer": is_customer}
+
+@app.post("/api/create-setup-intent")
+async def create_setup_intent(request: Request):
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    data = await request.json()
+    plan = data.get("plan")
+
+    if plan not in ["Pro", "Agency"]:
+        raise HTTPException(status_code=400, detail="Invalid plan selected")
+
+    # Get or create a Stripe customer
+    stripe_customers = stripe.Customer.list(email=user['email'])
+    if not stripe_customers.data:
+        stripe_customer = stripe.Customer.create(email=user['email'])
+    else:
+        stripe_customer = stripe_customers.data[0]
+
+    try:
+        # Create a Setup Intent
+        setup_intent = stripe.SetupIntent.create(
+            customer=stripe_customer.id,
+            payment_method_types=["card"],
+        )
+        return {"clientSecret": setup_intent.client_secret}
+    except Exception as e:
+        logger.error(f"Error creating setup intent: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create setup intent")
+
+@app.post("/api/confirm-trial-subscription")
+async def confirm_trial_subscription(request: Request):
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    data = await request.json()
+    plan = data.get("plan")
+    payment_method = data.get("paymentMethod")
+
+    if plan not in ["Pro", "Agency"]:
+        raise HTTPException(status_code=400, detail="Invalid plan selected")
+
+    # Get or create a Stripe customer
+    stripe_customers = stripe.Customer.list(email=user['email'])
+    if not stripe_customers.data:
+        stripe_customer = stripe.Customer.create(email=user['email'])
+    else:
+        stripe_customer = stripe_customers.data[0]
+
+    try:
+        # Attach the payment method to the customer
+        stripe.PaymentMethod.attach(payment_method, customer=stripe_customer.id)
+        stripe.Customer.modify(stripe_customer.id, invoice_settings={"default_payment_method": payment_method})
+
+        # Create a subscription with a free trial
+        subscription = stripe.Subscription.create(
+            customer=stripe_customer.id,
+            items=[{"price": os.getenv(f"STRIPE_{plan.upper()}_PRICE_ID")}],
+            trial_period_days=7,  # Set 7-day free trial
+        )
+        return {"success": True, "subscriptionId": subscription.id}
+    except Exception as e:
+        logger.error(f"Error confirming subscription: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to confirm subscription")
 
 
 @app.get("/chat_history")

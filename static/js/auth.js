@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const signupBtn = document.getElementById('signup-btn');
     const backToLoginBtn = document.getElementById('back-to-login-btn');
     const logoutBtn = document.getElementById('logout-btn');
+    const paidPlansSection = document.getElementById("paid-plans-section");
+    const appSection = document.getElementById("app-section");
+    const loginSection = document.getElementById("login-section");
+
 
     signupBtn.addEventListener('click', () => {
         loginForm.classList.add('hidden');
@@ -16,6 +20,24 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.classList.remove('hidden');
     });
 
+    // Function to check if user is a Stripe customer
+    async function checkStripeCustomer() {
+        const response = await fetch("/api/check-stripe-customer", { method: "GET", credentials: "include" });
+        const data = await response.json();
+
+        if (!data.is_stripe_customer) {
+            // Redirect user to the paid plans page
+            appSection.classList.add("hidden");
+            loginSection.classList.add("hidden");
+            paidPlansSection.classList.remove("hidden");
+        } else {
+            // Allow access to the dashboard
+            appSection.classList.remove("hidden");
+            await checkAuthStatus();
+            await updateTokenInfo(); // Update token information after successful login
+        }
+    }
+
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -26,8 +48,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Auto-initialize app after successful signup
             await api.signup(email, password);
             signupForm.reset();
-            await checkAuthStatus(); // This will show the app section and initialize chat
-            await updateTokenInfo(); // Update token information after successful signup
+            // await checkAuthStatus(); // This will show the app section and initialize chat
+            // await updateTokenInfo(); // Update token information after successful signup
         } catch (error) {
             utils.showError(error.message || 'Signup failed');
         }
@@ -51,8 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             await api.login(email, password);
-            await checkAuthStatus();
-            await updateTokenInfo(); // Update token information after successful login
+            await checkStripeCustomer();
+
         } catch (error) {
             utils.showError('Login failed. Please check your credentials.');
         }
@@ -86,5 +108,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 30000);
 
     // Initial auth check
-    checkAuthStatus();
+    // checkAuthStatus();
 });

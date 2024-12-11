@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Analysis & Chat</title>
     <link rel="stylesheet" href="/static/styles/main.css">
+    <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
     <!-- Login Section -->
@@ -84,10 +85,39 @@
         </div>
     </section>
 
+    <!-- Paid Plans Section -->
+    <section id="paid-plans-section" class="section hidden">
+        <div class="container">
+            <h1>Select Your Plan</h1>
+            <p>To continue using the app, please choose one of our paid plans. You won’t be charged until the 7-day free trial ends.</p>
+            <div class="plans-container">
+                <div class="plan" data-plan="Pro">
+                    <h2>Pro Plan</h2>
+                    <p>Access all features for individuals.</p>
+                    <p><strong>$10/month</strong> after trial.</p>
+                    <button class="select-plan-btn" data-plan="Pro">Select Pro</button>
+                </div>
+                <div class="plan" data-plan="Agency">
+                    <h2>Agency Plan</h2>
+                    <p>Team collaboration and advanced analytics.</p>
+                    <p><strong>$50/month</strong> after trial.</p>
+                    <button class="select-plan-btn" data-plan="Agency">Select Agency</button>
+                </div>
+            </div>
+            <form id="payment-form" class="hidden">
+                <div id="card-element" class="card-element"><!-- Stripe Elements will inject the card input here --></div>
+                <button type="submit" id="submit-payment-btn" disabled>Submit Payment</button>
+            </form>
+            <div id="card-errors" role="alert"></div>
+        </div>
+    </section>
+        
+
     <script src="/static/js/utils.js"></script>
     <script src="/static/js/token-handler.js"></script>
     <script src="/static/js/api.js"></script>
     <script src="/static/js/auth.js"></script>
     <script src="/static/js/chat.js"></script>
+    <script src="/static/js/paid-plans.js"></script>
 </body>
 </html>

@@ -411,6 +411,10 @@ button:hover {
     animation: progress-bar-stripes 1s linear infinite;
 }
 
+.card-element {
+    font-size: 1rem;
+    padding: 10px;
+}
 @keyframes progress-bar-stripes {
     from { background-position: 1rem 0; }
     to { background-position: 0 0; }
