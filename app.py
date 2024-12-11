@@ -416,12 +416,12 @@ async def check_stripe_customer(request: Request):
     is_customer = bool(stripe_customers.data)
     return {"is_stripe_customer": is_customer}
 
-@app.post("/api/create-setup-intent")
-async def create_setup_intent(request: Request):
-    user = await get_current_user(request)
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(request: Request):
+    user = await get_current_user(request)  # Ensure the user is authenticated
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     data = await request.json()
     plan = data.get("plan")
 
@@ -429,59 +429,58 @@ async def create_setup_intent(request: Request):
         raise HTTPException(status_code=400, detail="Invalid plan selected")
 
     # Get or create a Stripe customer
-    stripe_customers = stripe.Customer.list(email=user['email'])
+    stripe_customers = stripe.Customer.list(email=user["email"])
     if not stripe_customers.data:
-        stripe_customer = stripe.Customer.create(email=user['email'])
+        stripe_customer = stripe.Customer.create(email=user["email"])
     else:
         stripe_customer = stripe_customers.data[0]
 
+    # Define the price ID based on the plan
+    price_id = os.getenv(f"STRIPE_{plan.upper()}_PRICE_ID")  # Set these environment variables in your backend
+
     try:
-        # Create a Setup Intent
-        setup_intent = stripe.SetupIntent.create(
+        # Create a Stripe Checkout session
+        session = stripe.checkout.Session.create(
             customer=stripe_customer.id,
             payment_method_types=["card"],
+            line_items=[{"price": price_id, "quantity": 1}],
+            mode="subscription",
+            subscription_data={
+                "trial_period_days": 7,  # Set 7-day free trial
+            },
+            success_url="http://localhost:8080/dashboard?session_id={CHECKOUT_SESSION_ID}",  # Replace with your dashboard URL
+            cancel_url="http://localhost:8080/plans",  # Replace with your plans page URL
         )
-        return {"clientSecret": setup_intent.client_secret}
+        return {"sessionId": session.id}
     except Exception as e:
-        logger.error(f"Error creating setup intent: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create setup intent")
+        raise HTTPException(status_code=500, detail=f"Failed to create checkout session: {str(e)}")
 
-@app.post("/api/confirm-trial-subscription")
-async def confirm_trial_subscription(request: Request):
-    user = await get_current_user(request)
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    data = await request.json()
-    plan = data.get("plan")
-    payment_method = data.get("paymentMethod")
-
-    if plan not in ["Pro", "Agency"]:
-        raise HTTPException(status_code=400, detail="Invalid plan selected")
-
-    # Get or create a Stripe customer
-    stripe_customers = stripe.Customer.list(email=user['email'])
-    if not stripe_customers.data:
-        stripe_customer = stripe.Customer.create(email=user['email'])
-    else:
-        stripe_customer = stripe_customers.data[0]
+@app.post("/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("Stripe-Signature")
+    endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")  # Set your webhook secret here
 
     try:
-        # Attach the payment method to the customer
-        stripe.PaymentMethod.attach(payment_method, customer=stripe_customer.id)
-        stripe.Customer.modify(stripe_customer.id, invoice_settings={"default_payment_method": payment_method})
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
 
-        # Create a subscription with a free trial
-        subscription = stripe.Subscription.create(
-            customer=stripe_customer.id,
-            items=[{"price": os.getenv(f"STRIPE_{plan.upper()}_PRICE_ID")}],
-            trial_period_days=7,  # Set 7-day free trial
-        )
-        return {"success": True, "subscriptionId": subscription.id}
+        # Handle specific Stripe events
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            customer_id = session["customer"]
+            # Mark the user as subscribed in your database
+            user_email = session.get("customer_email")
+            plan_id = session["subscription"]
+            mark_user_as_subscribed(user_email, plan_id)  # Implement this function in your backend
+         # Handle specific Stripe trial_will_end events    
+        if event["type"] == "customer.subscription.trial_will_end":
+            subscription = event["data"]["object"]
+            logger.info(f"Trial ending for subscription {subscription['id']}")
+        return {"status": "success"}
+    except stripe.error.SignatureVerificationError as e:
+        raise HTTPException(status_code=400, detail=f"Webhook signature verification failed: {str(e)}")
     except Exception as e:
-        logger.error(f"Error confirming subscription: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to confirm subscription")
-
+        raise HTTPException(status_code=500, detail=f"Webhook error: {str(e)}")
 
 @app.get("/chat_history")
 async def get_chat_history_endpoint(request: Request):
