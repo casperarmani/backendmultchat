@@ -74,10 +74,9 @@ async def create_checkout_session(
                 'quantity': 1,
             }],
             mode='subscription',
-            payment_intent_data={
-                'metadata': {
-                    'subscription_id': None  # Will be set after subscription creation
-                }
+            metadata={
+                'user_id': str(user_id),
+                'tier_name': tier_name
             },
             success_url=f"https://{domain_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"https://{domain_url}/cancel"
@@ -135,16 +134,16 @@ async def stripe_webhook(
             logger.error(f"Webhook error: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
 
-        if event.type == 'payment_intent.succeeded':
-            payment_intent = event.data.object
-            logger.info(f"Payment succeeded for customer: {payment_intent.customer}")
+        if event.type == 'checkout.session.completed':
+            session = event.data.object
+            logger.info(f"Checkout completed for customer: {session.customer}")
             
             # Update subscription status
-            if payment_intent.metadata.get('subscription_id'):
+            if session.subscription:
                 await database.update_subscription_status(
-                    subscription_id=payment_intent.metadata.subscription_id,
+                    subscription_id=session.subscription,
                     status='active',
-                    stripe_customer_id=payment_intent.customer
+                    stripe_customer_id=session.customer
                 )
                 logger.info(f"Updated subscription status to active")
                 
