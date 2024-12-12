@@ -323,13 +323,17 @@ async def get_user_subscription(user_id: uuid.UUID) -> Dict:
         logger.error(f"Error getting user subscription: {str(e)}")
         raise ValueError(f"Failed to get subscription: {str(e)}")
 
-async def update_subscription_status(subscription_id: str, status: str) -> Dict:
+async def update_subscription_status(subscription_id: str, status: str, stripe_customer_id: str = None) -> Dict:
     """Update the status of a subscription"""
     try:
-        response = supabase.table("user_subscriptions").update({
+        update_data = {
             "status": status,
             "updated_at": datetime.now(timezone.utc).isoformat()
-        }).eq("stripe_subscription_id", subscription_id).execute()
+        }
+        if stripe_customer_id:
+            update_data["stripe_customer_id"] = stripe_customer_id
+            
+        response = supabase.table("user_subscriptions").update(update_data).eq("stripe_subscription_id", subscription_id).execute()
         
         return response.data[0] if response.data else {}
     except Exception as e:

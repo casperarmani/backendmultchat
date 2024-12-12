@@ -79,6 +79,9 @@ async def create_checkout_session(
         return {"url": session.url}
 
     except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        logger.error(f"Event type: {event['type'] if event else 'No event'}")
+        logger.error(f"Event data: {event['data'] if event else 'No data'}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/subscriptions/current")
@@ -95,6 +98,9 @@ async def get_current_subscription(
 
         return subscription
     except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        logger.error(f"Event type: {event['type'] if event else 'No event'}")
+        logger.error(f"Event data: {event['data'] if event else 'No data'}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/webhooks/stripe")
@@ -118,10 +124,11 @@ async def stripe_webhook(
 
         if event['type'] == 'customer.subscription.updated':
             subscription = event['data']['object']
-            # Update subscription status in database
+            # Update subscription status and customer ID in database
             await database.update_subscription_status(
                 subscription_id=subscription['id'],
-                status=subscription['status']
+                status=subscription['status'],
+                stripe_customer_id=subscription['customer']
             )
         elif event['type'] == 'customer.subscription.deleted':
             subscription = event['data']['object']
@@ -133,4 +140,7 @@ async def stripe_webhook(
 
         return Response(status_code=200)
     except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        logger.error(f"Event type: {event['type'] if event else 'No event'}")
+        logger.error(f"Event data: {event['data'] if event else 'No data'}")
         raise HTTPException(status_code=500, detail=str(e))
