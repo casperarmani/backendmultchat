@@ -1,89 +1,104 @@
-// Stripe client-side handling
-let stripe;
+// Initialize Stripe with the publishable key
+const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
 let elements;
+let selectedPlan;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize Stripe
-    stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+document.addEventListener('DOMContentLoaded', () => {
+    // Set up modal triggers
+    const upgradeBtn = document.getElementById('upgrade-btn');
+    const modal = document.getElementById('subscription-modal');
+    const closeBtn = modal.querySelector('.close-modal-btn');
+    const planButtons = document.querySelectorAll('.select-plan-btn');
+    const paymentForm = document.getElementById('payment-form');
 
-    // Handle subscription form submission
-    const subscriptionForm = document.getElementById('subscription-form');
-    if (subscriptionForm) {
-        subscriptionForm.addEventListener('submit', handleSubscription);
-    }
+    // Initialize Stripe Elements
+    elements = stripe.elements();
+    const cardElement = elements.create('card');
+    cardElement.mount('#card-element');
 
-    // Initialize subscription UI
-    await updateSubscriptionStatus();
-});
+    // Show modal
+    upgradeBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        paymentForm.classList.add('hidden');
+    });
 
-async function handleSubscription(e) {
-    e.preventDefault();
-    
-    const form = e.target;
-    const tierName = form.querySelector('select[name="tier"]').value;
-    
-    try {
-        // Create payment method
-        const { error: elementsError, paymentMethod } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: elements.getElement('card'),
+    // Close modal
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        selectedPlan = null;
+    });
+
+    // Handle plan selection
+    planButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            selectedPlan = e.target.dataset.plan;
+            paymentForm.classList.remove('hidden');
         });
+    });
 
-        if (elementsError) {
-            utils.showError(elementsError.message);
-            return;
-        }
+    // Handle form submission
+    paymentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        try {
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+            });
 
-        // Create subscription
-        const response = await api.createSubscription({
-            payment_method_id: paymentMethod.id,
-            tier_name: tierName
-        });
-
-        const { client_secret, status } = response;
-
-        if (status === 'requires_action') {
-            // Handle 3D Secure authentication
-            const { error: confirmError } = await stripe.confirmCardPayment(client_secret);
-            if (confirmError) {
-                utils.showError('Payment failed: ' + confirmError.message);
+            if (error) {
+                const errorElement = document.getElementById('card-errors');
+                errorElement.textContent = error.message;
                 return;
             }
+
+            // Create subscription
+            const response = await fetch('/api/subscriptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    payment_method_id: paymentMethod.id,
+                    tier_name: selectedPlan
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'requires_action') {
+                // Handle 3D Secure authentication
+                const { error: confirmError } = await stripe.confirmCardPayment(result.client_secret);
+                if (confirmError) {
+                    throw new Error(confirmError.message);
+                }
+            }
+
+            // Success
+            modal.classList.add('hidden');
+            utils.showSuccess('Subscription updated successfully!');
+            updateSubscriptionStatus();
+
+        } catch (error) {
+            const errorElement = document.getElementById('card-errors');
+            errorElement.textContent = error.message;
         }
+    });
+});
 
-        // Update UI
-        await updateSubscriptionStatus();
-        utils.showSuccess('Subscription updated successfully!');
-    } catch (error) {
-        utils.showError(error.message || 'Failed to process subscription');
-    }
-}
-
+// Update subscription status in the UI
 async function updateSubscriptionStatus() {
     try {
-        const subscription = await api.getCurrentSubscription();
+        const response = await fetch('/api/subscriptions/current');
+        const subscription = await response.json();
+        
         const statusElement = document.getElementById('current-plan');
-        if (statusElement) {
-            statusElement.textContent = `${subscription.tier} (${subscription.status})`;
-        }
+        statusElement.textContent = `${subscription.tier_name || 'Free'} (${subscription.status || 'active'})`;
+        
     } catch (error) {
         console.error('Error updating subscription status:', error);
     }
 }
 
-async function cancelSubscription(subscriptionId) {
-    try {
-        await api.cancelSubscription(subscriptionId);
-        await updateSubscriptionStatus();
-        utils.showSuccess('Subscription cancelled successfully');
-    } catch (error) {
-        utils.showError(error.message || 'Failed to cancel subscription');
-    }
-}
-
-// Export functions for use in other modules
-window.stripeClient = {
-    handleSubscription,
-    updateSubscriptionStatus,
-    cancelSubscription
-};
+// Initial status update
+updateSubscriptionStatus();

@@ -24,3 +24,6 @@ passlib
 python-jose
 
 stripe
+fastapi
+pydantic
+uvicorn
