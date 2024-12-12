@@ -12,6 +12,14 @@ from starlette.responses import Response
 
 # Initialize Stripe
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PRICE_ID_PRO = os.environ.get('STRIPE_PRICE_ID_PRO')
+STRIPE_PRICE_ID_AGENCY = os.environ.get('STRIPE_PRICE_ID_AGENCY')
+
+# Subscription tiers configuration
+SUBSCRIPTION_TIERS = {
+    "Pro": {"tokens": 500, "price": 99, "stripe_price_id": STRIPE_PRICE_ID_PRO},
+    "Agency": {"tokens": 1000, "price": 299, "stripe_price_id": STRIPE_PRICE_ID_AGENCY}
+}
 
 router = APIRouter()
 
@@ -27,26 +35,28 @@ async def create_checkout_session(
 ):
     """Create a Stripe Checkout session for subscription"""
     try:
-        if tier_name not in ["Pro", "Agency"]:
+        if tier_name not in SUBSCRIPTION_TIERS:
             raise HTTPException(status_code=400, detail="Invalid subscription tier")
 
         user_id = uuid.UUID(current_user['id'])
+        tier_info = SUBSCRIPTION_TIERS[tier_name]
         
-        # Get tier details from database
-        tier_info = await database.get_subscription_tier_by_name(tier_name)
-        if not tier_info:
-            raise HTTPException(status_code=400, detail="Invalid subscription tier")
-
         # Get or create Stripe customer
         subscription = await database.get_user_subscription(user_id)
         if not subscription or not subscription.get('stripe_customer_id'):
             # Create new Stripe customer
             customer = stripe.Customer.create(email=current_user['email'])
             customer_id = customer.id
+            
+            # Get tier details from database for subscription creation
+            db_tier = await database.get_subscription_tier_by_name(tier_name)
+            if not db_tier:
+                raise HTTPException(status_code=400, detail="Subscription tier not found in database")
+            
             # Save stripe customer id
             await database.create_user_subscription(
                 user_id=user_id,
-                tier_id=tier_info['id'],
+                tier_id=db_tier['id'],
                 stripe_customer_id=customer_id
             )
         else:
