@@ -109,7 +109,7 @@ async def get_current_subscription(
         logger.error(f"Event data: {event['data'] if event else 'No data'}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/api/webhooks/stripe")
+@router.post("/webhooks/stripe")
 async def stripe_webhook(
     request: Request,
     stripe_signature: str = Header(None)
