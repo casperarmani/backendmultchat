@@ -38,14 +38,21 @@ async def create_portal_session(current_user: Dict = Depends(get_current_user)):
         if not subscription or not subscription.get('stripe_customer_id'):
             raise HTTPException(status_code=400, detail="No subscription found")
         
-        session = stripe.billing_portal.Session.create(
-            customer=subscription['stripe_customer_id'],
-            return_url=f"{os.environ.get('DOMAIN_URL')}/dashboard"
-        )
-        return {"url": session.url}
+        try:
+            session = stripe.billing_portal.Session.create(
+                customer=subscription['stripe_customer_id'],
+                return_url=f"{os.environ.get('DOMAIN_URL')}/dashboard"
+            )
+            return {"url": session.url}
+        except stripe.error.InvalidRequestError as e:
+            if "No configuration provided" in str(e):
+                raise HTTPException(status_code=400, detail="Stripe Customer Portal not configured. Please contact support.")
+            raise
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating portal session: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to create portal session")
 
 @router.post("/create-checkout-session/{tier_name}")
 async def create_checkout_session(

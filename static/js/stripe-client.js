@@ -102,7 +102,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.location.href = session.url;
             } catch (error) {
                 console.error('Error:', error);
-                alert('Failed to access subscription management. Please try again.');
+                const errorMessage = error.response?.data?.detail || 'Failed to access subscription management. Please try again.';
+                alert(errorMessage);
             }
         });
     }
