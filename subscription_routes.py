@@ -21,6 +21,8 @@ SUBSCRIPTION_TIERS = {
     "Agency": {"tokens": 1000, "price": 299, "stripe_price_id": STRIPE_PRICE_ID_AGENCY}
 }
 
+import logging
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.get("/config")
@@ -72,8 +74,8 @@ async def create_checkout_session(
                 'quantity': 1,
             }],
             mode='subscription',
-            success_url=f"{domain_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{domain_url}/cancel"
+            success_url=f"https://{domain_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"https://{domain_url}/cancel"
         )
 
         return {"url": session.url}
