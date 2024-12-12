@@ -74,6 +74,11 @@ async def create_checkout_session(
                 'quantity': 1,
             }],
             mode='subscription',
+            payment_intent_data={
+                'metadata': {
+                    'subscription_id': None  # Will be set after subscription creation
+                }
+            },
             success_url=f"https://{domain_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"https://{domain_url}/cancel"
         )
@@ -112,6 +117,7 @@ async def stripe_webhook(
 ):
     """Handle Stripe webhooks"""
     try:
+        logger.info("Received Stripe webhook")
         event = None
         payload = await request.body()
         sig_header = stripe_signature
@@ -121,10 +127,28 @@ async def stripe_webhook(
             event = stripe.Webhook.construct_event(
                 payload, sig_header, webhook_secret
             )
+            logger.info(f"Webhook event type: {event.type}")
+        except stripe.error.SignatureVerificationError as e:
+            logger.error(f"Invalid signature: {str(e)}")
+            raise HTTPException(status_code=400, detail="Invalid signature")
         except Exception as e:
+            logger.error(f"Webhook error: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
 
-        if event.type == 'customer.subscription.updated':
+        if event.type == 'payment_intent.succeeded':
+            payment_intent = event.data.object
+            logger.info(f"Payment succeeded for customer: {payment_intent.customer}")
+            
+            # Update subscription status
+            if payment_intent.metadata.get('subscription_id'):
+                await database.update_subscription_status(
+                    subscription_id=payment_intent.metadata.subscription_id,
+                    status='active',
+                    stripe_customer_id=payment_intent.customer
+                )
+                logger.info(f"Updated subscription status to active")
+                
+        elif event.type == 'customer.subscription.updated':
             subscription = event.data.object
             try:
                 # Update subscription status and customer ID in database
