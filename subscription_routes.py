@@ -124,21 +124,31 @@ async def stripe_webhook(
 
         if event.type == 'customer.subscription.updated':
             subscription = event.data.object
-            # Update subscription status and customer ID in database
-            await database.update_subscription_status(
-                subscription_id=subscription.id,
-                status=subscription.status,
-                stripe_customer_id=subscription.customer
-            )
-            logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
+            try:
+                # Update subscription status and customer ID in database
+                result = await database.update_subscription_status(
+                    subscription_id=subscription.id,
+                    status=subscription.status,
+                    stripe_customer_id=subscription.customer
+                )
+                logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
+                logger.info(f"Update result: {result}")
+            except Exception as e:
+                logger.error(f"Failed to update subscription {subscription.id}: {str(e)}")
+                raise
         elif event.type == 'customer.subscription.deleted':
             subscription = event.data.object
-            # Update subscription status to canceled
-            await database.update_subscription_status(
-                subscription_id=subscription.id,
-                status='canceled'
-            )
-            logger.info(f"Marked subscription {subscription.id} as canceled")
+            try:
+                # Update subscription status to canceled
+                result = await database.update_subscription_status(
+                    subscription_id=subscription.id,
+                    status='canceled'
+                )
+                logger.info(f"Marked subscription {subscription.id} as canceled")
+                logger.info(f"Update result: {result}")
+            except Exception as e:
+                logger.error(f"Failed to cancel subscription {subscription.id}: {str(e)}")
+                raise
 
         return Response(status_code=200)
     except Exception as e:
