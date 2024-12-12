@@ -180,6 +180,20 @@ async def stripe_webhook(
                     stripe_customer_id=subscription.customer
                 )
                 logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
+                
+                # Get subscription details from database to update tokens
+                user_sub = await database.get_subscription_by_stripe_id(subscription.id)
+                if user_sub and user_sub.get('user_id'):
+                    # Get tier details
+                    tier_details = await database.get_subscription_tier_by_name('Pro' if subscription.items.data[0].price.id == STRIPE_PRICE_ID_PRO else 'Agency')
+                    if tier_details:
+                        # Update token balance
+                        await database.update_user_token_balance(
+                            user_id=uuid.UUID(user_sub['user_id']),
+                            tokens=tier_details['tokens']
+                        )
+                        logger.info(f"Updated tokens for user {user_sub['user_id']} to {tier_details['tokens']}")
+                
                 logger.info(f"Update result: {result}")
             except Exception as e:
                 logger.error(f"Failed to update subscription {subscription.id}: {str(e)}")

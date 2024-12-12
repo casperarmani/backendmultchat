@@ -323,6 +323,15 @@ async def get_user_subscription(user_id: uuid.UUID) -> Dict:
         logger.error(f"Error getting user subscription: {str(e)}")
         raise ValueError(f"Failed to get subscription: {str(e)}")
 
+async def get_subscription_by_stripe_id(stripe_subscription_id: str) -> Dict:
+    """Get subscription details by Stripe subscription ID"""
+    try:
+        response = supabase.table("user_subscriptions").select("*").eq("stripe_subscription_id", stripe_subscription_id).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error getting subscription by Stripe ID: {str(e)}")
+        raise ValueError(f"Failed to get subscription: {str(e)}")
+
 async def update_subscription_status(subscription_id: str, status: str, stripe_customer_id: str = None) -> Dict:
     """Update the status of a subscription"""
     try:
