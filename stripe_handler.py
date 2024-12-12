@@ -27,35 +27,24 @@ SUBSCRIPTION_TIERS = {
 
 class StripeHandler:
     @staticmethod
-    async def create_subscription(customer_id: str, price_id: str, payment_method_id: Optional[str] = None) -> Dict[str, Any]:
-        """Create a new subscription for a customer"""
+    async def create_checkout_session(customer_id: str, price_id: str, success_url: str, cancel_url: str) -> Dict[str, Any]:
+        """Create a Stripe Checkout session for subscription"""
         try:
-            # If payment method provided, attach it to customer
-            if payment_method_id:
-                payment_method = stripe.PaymentMethod.attach(
-                    payment_method_id,
-                    customer=customer_id
-                )
-                # Set as default payment method
-                stripe.Customer.modify(
-                    customer_id,
-                    invoice_settings={
-                        'default_payment_method': payment_method.id
-                    }
-                )
-
-            # Create the subscription
-            subscription = stripe.Subscription.create(
+            checkout_session = stripe.checkout.Session.create(
                 customer=customer_id,
-                items=[{'price': price_id}],
-                payment_behavior='default_incomplete',
-                expand=['latest_invoice.payment_intent']
+                payment_method_types=['card'],
+                line_items=[{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                mode='subscription',
+                success_url=success_url,
+                cancel_url=cancel_url,
             )
 
             return {
-                'subscription_id': subscription.id,
-                'client_secret': subscription.latest_invoice.payment_intent.client_secret,
-                'status': subscription.status
+                'session_id': checkout_session.id,
+                'url': checkout_session.url
             }
         except stripe.error.StripeError as e:
             logger.error(f"Error creating subscription: {str(e)}")

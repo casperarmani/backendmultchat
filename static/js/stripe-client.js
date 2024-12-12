@@ -1,94 +1,40 @@
 // Initialize Stripe 
 let stripe;
-let elements;
-let selectedPlan;
 
 // Fetch publishable key from backend
 async function initializeStripe() {
     const response = await fetch('/api/config');
     const { publishableKey } = await response.json();
     stripe = Stripe(publishableKey);
-    elements = stripe.elements();
-    const cardElement = elements.create('card');
-    cardElement.mount('#card-element');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
     await initializeStripe();
     
-    // Set up modal triggers
     const upgradeBtn = document.getElementById('upgrade-btn');
-    const modal = document.getElementById('subscription-modal');
-    const closeBtn = modal.querySelector('.close-modal-btn');
-    const planButtons = document.querySelectorAll('.select-plan-btn');
-    const paymentForm = document.getElementById('payment-form');
-
-    // Show modal
-    upgradeBtn.addEventListener('click', () => {
-        modal.classList.remove('hidden');
-        paymentForm.classList.add('hidden');
-    });
-
-    // Close modal
-    closeBtn.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        selectedPlan = null;
-    });
-
-    // Handle plan selection
-    planButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            selectedPlan = e.target.dataset.plan;
-            paymentForm.classList.remove('hidden');
-        });
-    });
-
-    // Handle form submission
-    paymentForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    
+    // Show plans dropdown when upgrade button is clicked
+    upgradeBtn.addEventListener('click', async () => {
+        const plan = confirm('Choose a plan:\nPro ($99/month)\nAgency ($299/month)');
+        const tierName = plan ? 'Pro' : 'Agency';
         
         try {
-            const { paymentMethod, error } = await stripe.createPaymentMethod({
-                type: 'card',
-                card: cardElement,
-            });
-
-            if (error) {
-                const errorElement = document.getElementById('card-errors');
-                errorElement.textContent = error.message;
-                return;
-            }
-
-            // Create subscription
-            const response = await fetch('/api/subscriptions', {
+            // Create checkout session
+            const response = await fetch(`/api/create-checkout-session/${tierName}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    payment_method_id: paymentMethod.id,
-                    tier_name: selectedPlan
-                }),
+                }
             });
 
-            const result = await response.json();
-
-            if (result.status === 'requires_action') {
-                // Handle 3D Secure authentication
-                const { error: confirmError } = await stripe.confirmCardPayment(result.client_secret);
-                if (confirmError) {
-                    throw new Error(confirmError.message);
-                }
-            }
-
-            // Success
-            modal.classList.add('hidden');
-            utils.showSuccess('Subscription updated successfully!');
-            updateSubscriptionStatus();
+            const session = await response.json();
+            
+            // Redirect to Stripe Checkout
+            window.location.href = session.url;
 
         } catch (error) {
-            const errorElement = document.getElementById('card-errors');
-            errorElement.textContent = error.message;
+            console.error('Error:', error);
+            alert('Failed to start checkout process. Please try again.');
         }
     });
 });
@@ -100,7 +46,9 @@ async function updateSubscriptionStatus() {
         const subscription = await response.json();
         
         const statusElement = document.getElementById('current-plan');
-        statusElement.textContent = `${subscription.tier_name || 'Free'} (${subscription.status || 'active'})`;
+        if (statusElement) {
+            statusElement.textContent = `${subscription.tier || 'Free'} (${subscription.status || 'active'})`;
+        }
         
     } catch (error) {
         console.error('Error updating subscription status:', error);

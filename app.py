@@ -129,6 +129,8 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc"
 )
+from subscription_routes import router as subscription_router
+app.include_router(subscription_router, prefix="/api", tags=["subscriptions"])
 
 # Setup session cleanup background task
 @app.on_event("startup")
