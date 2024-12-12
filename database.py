@@ -294,3 +294,61 @@ async def initialize_user_tokens(user_id: uuid.UUID, tier_id: int = 1) -> None:
     except Exception as e:
         logger.error(f"Error initializing user tokens: {str(e)}")
         raise ValueError(f"Failed to initialize user tokens: {str(e)}")
+
+# Subscription Management Functions
+async def create_user_subscription(user_id: uuid.UUID, tier_id: int, stripe_customer_id: str = None, stripe_subscription_id: str = None) -> Dict:
+    """Create a new subscription for a user"""
+    try:
+        response = supabase.table("user_subscriptions").insert({
+            "user_id": str(user_id),
+            "subscription_tier_id": tier_id,
+            "stripe_customer_id": stripe_customer_id,
+            "stripe_subscription_id": stripe_subscription_id,
+            "status": "active" if stripe_subscription_id else "incomplete"
+        }).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error creating user subscription: {str(e)}")
+        raise ValueError(f"Failed to create subscription: {str(e)}")
+
+async def get_user_subscription(user_id: uuid.UUID) -> Dict:
+    """Get the current subscription for a user"""
+    try:
+        response = supabase.table("user_subscriptions").select(
+            "*, subscription_tiers(tier_name, tokens, price)"
+        ).eq("user_id", str(user_id)).is_("deleted_at", "null").execute()
+        
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error getting user subscription: {str(e)}")
+        raise ValueError(f"Failed to get subscription: {str(e)}")
+
+async def update_subscription_status(subscription_id: str, status: str) -> Dict:
+    """Update the status of a subscription"""
+    try:
+        response = supabase.table("user_subscriptions").update({
+            "status": status,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("stripe_subscription_id", subscription_id).execute()
+        
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error updating subscription status: {str(e)}")
+        raise ValueError(f"Failed to update subscription status: {str(e)}")
+
+async def get_subscription_tier(tier_id: int) -> Dict:
+    """Get subscription tier details"""
+    try:
+        response = supabase.table("subscription_tiers").select("*").eq("id", tier_id).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error getting subscription tier: {str(e)}")
+        raise ValueError(f"Failed to get subscription tier: {str(e)}")
+async def get_subscription_tier_by_name(tier_name: str) -> Dict:
+    """Get subscription tier details by name"""
+    try:
+        response = supabase.table("subscription_tiers").select("*").eq("tier_name", tier_name).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error getting subscription tier by name: {str(e)}")
+        raise ValueError(f"Failed to get subscription tier: {str(e)}")
