@@ -122,21 +122,23 @@ async def stripe_webhook(
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-        if event['type'] == 'customer.subscription.updated':
-            subscription = event['data']['object']
+        if event.type == 'customer.subscription.updated':
+            subscription = event.data.object
             # Update subscription status and customer ID in database
             await database.update_subscription_status(
-                subscription_id=subscription['id'],
-                status=subscription['status'],
-                stripe_customer_id=subscription['customer']
+                subscription_id=subscription.id,
+                status=subscription.status,
+                stripe_customer_id=subscription.customer
             )
-        elif event['type'] == 'customer.subscription.deleted':
-            subscription = event['data']['object']
+            logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
+        elif event.type == 'customer.subscription.deleted':
+            subscription = event.data.object
             # Update subscription status to canceled
             await database.update_subscription_status(
-                subscription_id=subscription['id'],
+                subscription_id=subscription.id,
                 status='canceled'
             )
+            logger.info(f"Marked subscription {subscription.id} as canceled")
 
         return Response(status_code=200)
     except Exception as e:
