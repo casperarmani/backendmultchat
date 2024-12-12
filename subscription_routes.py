@@ -30,6 +30,23 @@ async def get_stripe_config():
     """Get Stripe publishable key"""
     return {"publishableKey": os.environ.get('STRIPE_PUBLISHABLE_KEY')}
 
+@router.post("/create-portal-session")
+async def create_portal_session(current_user: Dict = Depends(get_current_user)):
+    """Create a Stripe Customer Portal session"""
+    try:
+        subscription = await database.get_user_subscription(uuid.UUID(current_user['id']))
+        if not subscription or not subscription.get('stripe_customer_id'):
+            raise HTTPException(status_code=400, detail="No subscription found")
+        
+        session = stripe.billing_portal.Session.create(
+            customer=subscription['stripe_customer_id'],
+            return_url=f"{os.environ.get('DOMAIN_URL')}/dashboard"
+        )
+        return {"url": session.url}
+    except Exception as e:
+        logger.error(f"Error creating portal session: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/create-checkout-session/{tier_name}")
 async def create_checkout_session(
     tier_name: str,

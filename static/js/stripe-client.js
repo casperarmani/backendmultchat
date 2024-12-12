@@ -86,6 +86,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     });
+
+    // Add manage subscription button handler
+    const manageSubBtn = document.getElementById('manage-subscription-btn');
+    if (manageSubBtn) {
+        manageSubBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/create-portal-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                const session = await response.json();
+                window.location.href = session.url;
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to access subscription management. Please try again.');
+            }
+        });
+    }
 });
 
 // Update subscription status in the UI
