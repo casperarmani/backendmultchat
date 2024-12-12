@@ -1,20 +1,27 @@
-// Initialize Stripe with the publishable key
-const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+// Initialize Stripe 
+let stripe;
 let elements;
 let selectedPlan;
 
-document.addEventListener('DOMContentLoaded', () => {
+// Fetch publishable key from backend
+async function initializeStripe() {
+    const response = await fetch('/api/config');
+    const { publishableKey } = await response.json();
+    stripe = Stripe(publishableKey);
+    elements = stripe.elements();
+    const cardElement = elements.create('card');
+    cardElement.mount('#card-element');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await initializeStripe();
+    
     // Set up modal triggers
     const upgradeBtn = document.getElementById('upgrade-btn');
     const modal = document.getElementById('subscription-modal');
     const closeBtn = modal.querySelector('.close-modal-btn');
     const planButtons = document.querySelectorAll('.select-plan-btn');
     const paymentForm = document.getElementById('payment-form');
-
-    // Initialize Stripe Elements
-    elements = stripe.elements();
-    const cardElement = elements.create('card');
-    cardElement.mount('#card-element');
 
     // Show modal
     upgradeBtn.addEventListener('click', () => {

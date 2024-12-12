@@ -8,6 +8,10 @@ from auth import get_current_user
 
 router = APIRouter()
 
+@router.get("/config")
+async def get_stripe_config():
+    """Get Stripe publishable key"""
+    return {"publishableKey": os.environ.get('STRIPE_PUBLISHABLE_KEY')}
 class SubscriptionCreate(BaseModel):
     payment_method_id: str
     tier_name: str = Field(..., regex="^(Pro|Agency)$")
