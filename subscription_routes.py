@@ -150,13 +150,22 @@ async def stripe_webhook(
                     )
                     logger.info(f"Subscription {session.subscription} created and activated for customer {session.customer}")
 
-                    # Update user's subscription tier based on metadata
+                    # Update user's subscription tier and tokens based on metadata
                     if 'user_id' in session.metadata and 'tier_name' in session.metadata:
-                        await database.update_user_subscription_tier(
-                            user_id=session.metadata['user_id'],
-                            tier_name=session.metadata['tier_name']
-                        )
-                        logger.info(f"Updated user {session.metadata['user_id']} to tier {session.metadata['tier_name']}")
+                        # Get tier details
+                        tier_details = await database.get_subscription_tier_by_name(session.metadata['tier_name'])
+                        if tier_details:
+                            # Update tier
+                            await database.update_user_subscription_tier(
+                                user_id=session.metadata['user_id'],
+                                tier_name=session.metadata['tier_name']
+                            )
+                            # Update token balance
+                            await database.update_user_token_balance(
+                                user_id=uuid.UUID(session.metadata['user_id']),
+                                tokens=tier_details['tokens']
+                            )
+                            logger.info(f"Updated user {session.metadata['user_id']} to tier {session.metadata['tier_name']} with {tier_details['tokens']} tokens")
                 except Exception as e:
                     logger.error(f"Failed to update subscription: {str(e)}")
                     raise

@@ -376,3 +376,22 @@ async def update_user_subscription_tier(user_id: str, tier_name: str) -> Dict:
     except Exception as e:
         logger.error(f"Error updating user subscription tier: {str(e)}")
         raise ValueError(f"Failed to update subscription tier: {str(e)}")
+
+
+async def update_user_token_balance(user_id: uuid.UUID, tokens: int) -> Dict:
+    """Update user's token balance"""
+    try:
+        response = supabase.table("user_tokens").update({
+            "tokens": tokens,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("user_id", str(user_id)).execute()
+        
+        # Invalidate token balance cache
+        cache_key = f"token_balance:{str(user_id)}"
+        redis_manager.invalidate_cache(cache_key)
+        
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error updating user token balance: {str(e)}")
+        raise ValueError(f"Failed to update token balance: {str(e)}")
+
