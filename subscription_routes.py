@@ -140,15 +140,23 @@ async def stripe_webhook(
             
             # Update subscription status
             logger.info(f"Session data: {session}")
-            if session.subscription:
+            if session.mode == 'subscription':
                 try:
-                    subscription = stripe.Subscription.retrieve(session.subscription)
-                    await database.update_subscription_status(
+                    # Get the subscription from the session metadata
+                    subscription = await database.update_subscription_status(
                         subscription_id=session.subscription,
                         status='active',
                         stripe_customer_id=session.customer
                     )
-                    logger.info(f"Updated subscription {session.subscription} status to active")
+                    logger.info(f"Subscription {session.subscription} created and activated for customer {session.customer}")
+
+                    # Update user's subscription tier based on metadata
+                    if 'user_id' in session.metadata and 'tier_name' in session.metadata:
+                        await database.update_user_subscription_tier(
+                            user_id=session.metadata['user_id'],
+                            tier_name=session.metadata['tier_name']
+                        )
+                        logger.info(f"Updated user {session.metadata['user_id']} to tier {session.metadata['tier_name']}")
                 except Exception as e:
                     logger.error(f"Failed to update subscription: {str(e)}")
                     raise

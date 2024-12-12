@@ -356,3 +356,23 @@ async def get_subscription_tier_by_name(tier_name: str) -> Dict:
     except Exception as e:
         logger.error(f"Error getting subscription tier by name: {str(e)}")
         raise ValueError(f"Failed to get subscription tier: {str(e)}")
+async def update_user_subscription_tier(user_id: str, tier_name: str) -> Dict:
+    """Update user's subscription tier"""
+    try:
+        # Get tier ID from tier name
+        tier_response = supabase.table("subscription_tiers").select("id").eq("tier_name", tier_name).execute()
+        if not tier_response.data:
+            raise ValueError(f"Tier {tier_name} not found")
+            
+        tier_id = tier_response.data[0]['id']
+        
+        # Update user's subscription tier
+        response = supabase.table("user_tokens").update({
+            "subscription_tier_id": tier_id,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("user_id", user_id).execute()
+        
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        logger.error(f"Error updating user subscription tier: {str(e)}")
+        raise ValueError(f"Failed to update subscription tier: {str(e)}")
