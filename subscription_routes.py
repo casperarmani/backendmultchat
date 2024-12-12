@@ -109,7 +109,7 @@ async def get_current_subscription(
         logger.error(f"Event data: {event['data'] if event else 'No data'}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/webhooks/stripe")
+@router.post("/api/webhooks/stripe")
 async def stripe_webhook(
     request: Request,
     stripe_signature: str = Header(None)
@@ -139,13 +139,19 @@ async def stripe_webhook(
             logger.info(f"Checkout completed for customer: {session.customer}")
             
             # Update subscription status
+            logger.info(f"Session data: {session}")
             if session.subscription:
-                await database.update_subscription_status(
-                    subscription_id=session.subscription,
-                    status='active',
-                    stripe_customer_id=session.customer
-                )
-                logger.info(f"Updated subscription status to active")
+                try:
+                    subscription = stripe.Subscription.retrieve(session.subscription)
+                    await database.update_subscription_status(
+                        subscription_id=session.subscription,
+                        status='active',
+                        stripe_customer_id=session.customer
+                    )
+                    logger.info(f"Updated subscription {session.subscription} status to active")
+                except Exception as e:
+                    logger.error(f"Failed to update subscription: {str(e)}")
+                    raise
                 
         elif event.type == 'customer.subscription.updated':
             subscription = event.data.object
