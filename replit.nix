@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.gh
     pkgs.postgresql
     pkgs.imagemagickBig
     pkgs.ffmpeg-full
