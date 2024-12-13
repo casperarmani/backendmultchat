@@ -21,7 +21,7 @@ from database import (
     insert_video_analysis, get_video_analysis_history, check_user_exists,
     get_user_conversations, create_conversation, get_conversation_messages,
     update_conversation_title, delete_conversation, get_user_token_balance,
-    get_user_subscription_tier
+    get_user_subscription_tier, initialize_user_tokens
 )
 from dotenv import load_dotenv
 import uvicorn
