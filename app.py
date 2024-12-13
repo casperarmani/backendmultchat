@@ -226,8 +226,11 @@ async def signup(
                 detail="Too many signup attempts. Please try again later."
             )
 
-        # Create user
+        # Create user and initialize tokens
         user = await create_user(email, password)
+        
+        # Initialize tokens and wait for completion
+        await initialize_user_tokens(uuid.UUID(user["id"]))
         
         # Auto-login after signup for better UX
         auth_response = supabase.auth.sign_in_with_password({

@@ -284,13 +284,17 @@ async def initialize_user_tokens(user_id: uuid.UUID, tier_id: int = 1) -> None:
         initial_tokens = tier_response.data[0]["tokens"]
         
         # Create user_tokens entry
-        supabase.table("user_tokens").insert({
+        response = supabase.table("user_tokens").insert({
             "user_id": str(user_id),
             "subscription_tier_id": tier_id,
             "tokens": initial_tokens,
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat()
         }).execute()
+
+        # Ensure cache is updated
+        cache_key = f"token_balance:{str(user_id)}"
+        redis_manager.set_cache(cache_key, initial_tokens, ttl=30)
     except Exception as e:
         logger.error(f"Error initializing user tokens: {str(e)}")
         raise ValueError(f"Failed to initialize user tokens: {str(e)}")
