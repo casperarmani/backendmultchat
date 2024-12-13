@@ -404,6 +404,10 @@ async def auth_status(request: Request):
 async def serve_static_app(request: Request):
     return FileResponse("static/index.html")
 
+@app.get("/success")
+async def stripe_success(request: Request):
+    return FileResponse("static/index.html")
+
 
 
 @app.get("/chat_history")
