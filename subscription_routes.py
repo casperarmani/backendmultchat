@@ -25,6 +25,11 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+@router.get("/success")
+async def payment_success():
+    """Handle successful payment redirect"""
+    return RedirectResponse(url="/dashboard")
+
 @router.get("/config")
 async def get_stripe_config():
     """Get Stripe publishable key"""
@@ -102,7 +107,7 @@ async def create_checkout_session(
                 'user_id': str(user_id),
                 'tier_name': tier_name
             },
-            success_url=f"https://{domain_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
+            success_url=f"{domain_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"https://{domain_url}/cancel"
         )
 
