@@ -33,6 +33,7 @@ import {
   Trash
 } from "lucide-react";
 import { Chat } from '@/types';
+import { handleManageSubscription } from '@/components/ui/dropdown-menu'; // Added import
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -362,9 +363,9 @@ export function Sidebar({
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleBillings}>
+            <DropdownMenuItem onClick={handleManageSubscription}> {/* Changed onClick handler */}
               <CreditCard className="mr-2 h-4 w-4" />
-              <span>Billing</span>
+              <span>Manage Billing</span> {/* Changed text */}
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />

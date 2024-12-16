@@ -150,22 +150,6 @@ function TokenContainer() {
     }
   };
 
-  const handleManageSubscription = async () => {
-    try {
-      const response = await fetch('/api/create-portal-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const session = await response.json();
-      window.location.href = session.url;
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Failed to access subscription management. Please try again.');
-    }
-  };
-
   // Fetch auth status on mount
   useEffect(() => {
     if(!loading && user) {
@@ -184,19 +168,9 @@ function TokenContainer() {
       <div>
         <h3>Your Plan</h3>
         <p>{planInfo}</p>
-        <div className="space-y-2">
-          <button className="px-4 py-2 bg-primary text-white rounded hover:opacity-80"  onClick={() => setShowModal(true)}>
-            Upgrade Plan
-          </button>
-          {cachedTokenInfo?.subscription?.tier !== 'Free' && (
-            <button 
-              onClick={handleManageSubscription} 
-              className="px-4 py-2 bg-secondary text-white rounded hover:opacity-80"
-            >
-              Manage Subscription
-            </button>
-          )}
-        </div>
+        <button className="px-4 py-2 bg-primary text-white rounded hover:opacity-80" onClick={() => setShowModal(true)}>
+          Upgrade Plan
+        </button>
       </div>
 
       {showModal && (
