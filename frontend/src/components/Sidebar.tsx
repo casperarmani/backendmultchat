@@ -218,35 +218,46 @@ export function Sidebar({
                 )}
                 onClick={() => onSelectChat(chat.id)}
               >
-                <div className='flex'>
-                  <MessageSquare className="h-4 w-4 shrink-0" />
+                <div className='flex items-center justify-between w-full'>
+                  <div className='flex items-center'>
+                    <MessageSquare className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && (
+                      editingId === chat.id ? (
+                        <input value={changedTitle} className="ml-2 w-[150px] bg-transparent" onChange={(e) => setChangedTitle(e.target.value)} />
+                      ) : (
+                        <span className="ml-2 truncate max-w-[150px]">{chat.title}</span>
+                      )
+                    )}
+                  </div>
                   {!isCollapsed && (
-                    editingId === chat.id ? (
-                      <input value={changedTitle} className="ml-2 w-[70%]" onChange={(e) => setChangedTitle(e.target.value)} />
-                    ) : (
-                      <span className="ml-2 truncate">{chat.title}</span>
-                    )
+                    <div className='flex gap-2'>
+                      {editingId === chat.id ? (
+                        <Save 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateConversationTitle(editingId, changedTitle);
+                          }} 
+                          className="h-4 w-4 shrink-0 hover:text-primary cursor-pointer" 
+                        />
+                      ) : (
+                        <Pencil 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingIdAndTitle(chat.id, chat.title);
+                          }} 
+                          className="h-4 w-4 shrink-0 hover:text-primary cursor-pointer" 
+                        />
+                      )}
+                      <Trash 
+                        className="h-4 w-4 shrink-0 hover:text-destructive cursor-pointer" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteConversation(chat.id);
+                        }}
+                      />
+                    </div>
                   )}
                 </div>
-                {!isCollapsed && (
-                  <div className='flex gap-2 ml-2'>
-                    {editingId === chat.id ? (
-                      <Save 
-                        onClick={() => updateConversationTitle(editingId, changedTitle)} 
-                        className="h-4 w-4 shrink-0 hover:text-primary cursor-pointer" 
-                      />
-                    ) : (
-                      <Pencil 
-                        onClick={() => setEditingIdAndTitle(chat.id, chat.title)} 
-                        className="h-4 w-4 shrink-0 hover:text-primary cursor-pointer" 
-                      />
-                    )}
-                    <Trash 
-                      className="h-4 w-4 shrink-0 hover:text-destructive cursor-pointer" 
-                      onClick={() => deleteConversation(chat.id)}
-                    />
-                  </div>
-                )}
               </Button>
             ))}
           </div>
