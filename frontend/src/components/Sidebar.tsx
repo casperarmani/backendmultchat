@@ -228,10 +228,25 @@ export function Sidebar({
                     )
                   )}
                 </div>
-                <div className='p-2 flex'>
-                  {editingId === chat.id ? (<Save onClick={() => updateConversationTitle(editingId, changedTitle)} className="h-4 w-4 shrink-0" />) : (<Pencil onClick={() => setEditingIdAndTitle(chat.id, chat.title)} className="h-4 w-4 shrink-0" />)}
-                  <Trash className="h-4 w-4 shrink-0" onClick={() => deleteConversation(chat.id)}/>
-                </div>
+                {!isCollapsed && (
+                  <div className='flex gap-2 ml-2'>
+                    {editingId === chat.id ? (
+                      <Save 
+                        onClick={() => updateConversationTitle(editingId, changedTitle)} 
+                        className="h-4 w-4 shrink-0 hover:text-primary cursor-pointer" 
+                      />
+                    ) : (
+                      <Pencil 
+                        onClick={() => setEditingIdAndTitle(chat.id, chat.title)} 
+                        className="h-4 w-4 shrink-0 hover:text-primary cursor-pointer" 
+                      />
+                    )}
+                    <Trash 
+                      className="h-4 w-4 shrink-0 hover:text-destructive cursor-pointer" 
+                      onClick={() => deleteConversation(chat.id)}
+                    />
+                  </div>
+                )}
               </Button>
             ))}
           </div>
