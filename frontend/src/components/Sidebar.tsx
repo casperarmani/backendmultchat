@@ -28,6 +28,9 @@ import {
   Boxes,
   Plus,
   CreditCard,
+  Save,
+  Pencil ,
+  Trash
 } from "lucide-react";
 import { Chat } from '@/types';
 
@@ -36,6 +39,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   chats: Chat[];
   currentChatId: string | null;
   onNewChat: () => void;
+  onUpdatetitle:() => void;
   onSelectChat: (chatId: string) => void;
 }
 
@@ -43,11 +47,14 @@ export function Sidebar({
   className, 
   chats, 
   currentChatId, 
-  onNewChat, 
+  onNewChat,
+  onUpdatetitle, 
   onSelectChat 
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { logout, user } = useAuth();
+  const [editingId, setEditingId] = useState("");
+  const [changedTitle, setChangedTitle] = useState("");
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -58,6 +65,86 @@ export function Sidebar({
       console.error('Logout failed:', error);
     }
   };
+
+  const handleBillings = async () => {
+    try {
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const session = await response.json();
+      window.location.href = session.url;
+    } catch (error) {
+      console.error('Error:', error);
+  
+      // Check if the error is an instance of Error
+      if (error instanceof Error) {
+        const errorMessage =
+          (error as any)?.response?.data?.detail ||
+          error.message ||
+          'Failed to access subscription management. Please try again.';
+        alert(errorMessage);
+      } else {
+        // Handle unknown error types
+        alert('An unknown error occurred. Please try again.');
+      }
+    }
+  };
+  
+  const setEditingIdAndTitle = (selectedId:string, selectedTitle:string) => {
+    setEditingId(selectedId)
+    setChangedTitle(selectedTitle)
+  }
+  const updateConversationTitle = async (currentChatId:string, title:string) => {
+    try {
+        setEditingId("");
+        if (!title || !title.trim()) {
+            throw new Error('Title cannot be empty');
+        }
+
+        const formData = new FormData();
+        formData.append('title', title.trim());
+        const response = await fetch(`/conversations/${currentChatId}`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.detail) {
+            throw new Error(data.detail);
+        }
+        onUpdatetitle();
+        return data;
+    } catch (error) {
+        console.error('Error updating conversation title:', error);
+        throw error;
+    }
+  };
+
+  const deleteConversation = async (conversationId:string) => {
+    try {
+        if (!conversationId) {
+            throw new Error('Invalid conversation ID');
+        }
+        const response = await fetch(`/conversations/${conversationId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.detail) {
+            throw new Error(data.detail);
+        }
+        onUpdatetitle();
+        return data;
+    } catch (error) {
+        console.error('Error deleting conversation:', error);
+        throw error;
+    }
+  }
 
   return (
     <div 
@@ -126,15 +213,25 @@ export function Sidebar({
                 key={chat.id}
                 variant={currentChatId === chat.id ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start transition-all duration-300 ease-in-out",
+                  "w-full justify-between transition-all duration-300 ease-in-out flex",
                   isCollapsed ? "px-2" : "px-4"
                 )}
                 onClick={() => onSelectChat(chat.id)}
               >
-                <MessageSquare className="h-4 w-4 shrink-0" />
-                {!isCollapsed && (
-                  <span className="ml-2 truncate">{chat.title}</span>
-                )}
+                <div className='flex'>
+                  <MessageSquare className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && (
+                    editingId === chat.id ? (
+                      <input value={changedTitle} className="ml-2 w-[70%]" onChange={(e) => setChangedTitle(e.target.value)} />
+                    ) : (
+                      <span className="ml-2 truncate">{chat.title}</span>
+                    )
+                  )}
+                </div>
+                <div className='p-2 flex'>
+                  {editingId === chat.id ? (<Save onClick={() => updateConversationTitle(editingId, changedTitle)} className="h-4 w-4 shrink-0" />) : (<Pencil onClick={() => setEditingIdAndTitle(chat.id, chat.title)} className="h-4 w-4 shrink-0" />)}
+                  <Trash className="h-4 w-4 shrink-0" onClick={() => deleteConversation(chat.id)}/>
+                </div>
               </Button>
             ))}
           </div>
@@ -239,7 +336,7 @@ export function Sidebar({
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleBillings}>
               <CreditCard className="mr-2 h-4 w-4" />
               <span>Billing</span>
             </DropdownMenuItem>

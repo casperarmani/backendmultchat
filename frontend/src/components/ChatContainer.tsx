@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback  } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { ChatHeader } from './chat/ChatHeader';
 import { ChatWelcome } from './chat/ChatWelcome';
@@ -29,6 +29,10 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const INITIAL_POLL_INTERVAL = 1000; // 1 second
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastMessageTimestampRef = useRef<string | null>(null);
+  const isFetchingRef = useRef<boolean>(false); // Prevent concurrent fetches
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -46,10 +50,62 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     fetchChatHistory();
   }, []);
 
+  // Start polling when chatId changes or component mounts
   useEffect(() => {
-    console.log('Environment variable check:', {
-      VITE_API_URL: import.meta.env.VITE_API_URL,
-    });
+    if (chatId) {
+      startPolling();
+    }
+
+    return () => stopPolling(); // Cleanup on unmount
+  }, [chatId]);
+
+  const fetchNewMessages = useCallback(async () => {
+     if (!chatId || isFetchingRef.current) return; // Skip if already fetching
+
+    isFetchingRef.current = true; // Mark as fetching
+
+    try {
+      const response = await fetch(`/conversations/${chatId}/messages`);
+      
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Response text:', text);
+        throw new Error(`Failed to fetch chat history: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.messages && Array.isArray(data.messages)) {
+          const formattedMessages: Message[] = data.messages.map((msg: any) => ({
+            type: msg.chat_type === 'bot' ? 'bot' : 'user',
+            content: msg.message,
+            timestamp: msg.TIMESTAMP
+          }));
+          const sortedMessages: Message[] = formattedMessages.sort((a, b) => {
+            const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return dateA - dateB;
+         });
+
+        setChatMessages(sortedMessages);
+      }
+    } catch (error) {
+      console.error('Error fetching new messages:', error);
+    } finally {
+      isFetchingRef.current = false; // Mark as not fetching
+    }
+  }, [chatId]);
+
+  const startPolling = useCallback(() => {
+    stopPolling(); // Ensure no duplicate intervals
+    pollIntervalRef.current = setInterval(fetchNewMessages, INITIAL_POLL_INTERVAL);
+  }, [fetchNewMessages]);
+
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
   }, []);
 
   const fetchChatHistory = async () => {
@@ -62,8 +118,6 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         }
       });
       
-      console.log('Response status:', response.status);
-      
       if (!response.ok) {
         const text = await response.text();
         console.error('Response text:', text);
@@ -71,17 +125,22 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       }
       
       const data = await response.json();
-      console.log('Received data:', data);
-      
       if (data.history && Array.isArray(data.history)) {
-        const formattedMessages: Message[] = data.history.map((msg: any) => ({
-          type: msg.chat_type === 'bot' ? 'bot' : 'user',
-          content: msg.message,
-          timestamp: msg.TIMESTAMP
-        }));
-        
-        setChatMessages(formattedMessages);
+          const filteredMessage = data.history.filter((msg:any) => msg.conversation_id === chatId);
+          const formattedMessages: Message[] = filteredMessage.map((msg: any) => ({
+            type: msg.chat_type === 'bot' ? 'bot' : 'user',
+            content: msg.message,
+            timestamp: msg.TIMESTAMP
+          }));
+          const sortedMessages: Message[] = formattedMessages.sort((a, b) => {
+            const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return dateA - dateB;
+         });
+
+        setChatMessages(sortedMessages);
       }
+
     } catch (error) {
       console.error('Error fetching chat history:', error);
       setError('Failed to load chat history');
@@ -102,6 +161,10 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       files.forEach((file) => {
         formData.append('videos', file);
       });
+
+      if(chatId){
+        formData.append('conversation_id', chatId);
+      }
 
       const response = await fetch('/send_message', {
         method: 'POST',

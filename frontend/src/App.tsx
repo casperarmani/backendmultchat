@@ -1,5 +1,6 @@
 import React from 'react';
 import ChatContainer from './components/ChatContainer';
+import TokenContainer from './components/TokenContainer';
 import History from './components/History';
 import { Sidebar } from './components/Sidebar';
 import { ChatHistory, VideoHistory, ApiResponse, Chat, Message } from './types';
@@ -9,6 +10,8 @@ function App() {
   const [videoHistory, setVideoHistory] = React.useState<VideoHistory[]>([]);
   const [error, setError] = React.useState<string | null>(null);
   const [chats, setChats] = React.useState<Chat[]>([]);
+  const [conversations, setConversations] = React.useState<Chat[]>([]);
+
   const [currentChatId, setCurrentChatId] = React.useState<string | null>(null);
 
   const fetchHistories = async () => {
@@ -42,16 +45,73 @@ function App() {
     }
   };
 
-  const handleNewChat = () => {
-    const newChat: Chat = {
-      id: Date.now().toString(),
-      title: `New Chat ${chats.length + 1}`,
-      messages: [],
-      timestamp: new Date().toISOString()
+  type NewChat = {
+    success: boolean;
+    conversation: {
+        id: string;
+        user_id: string;
+        title: string;
+        created_at: string; // ISO 8601 timestamp
+        updated_at: string; // ISO 8601 timestamp
+        deleted_at: string | null; // Nullable timestamp
     };
-    setChats([newChat, ...chats]);
-    setCurrentChatId(newChat.id);
+};
+
+
+  const fetchNewChat = async (formData: FormData): Promise<NewChat> => {
+    const response = await fetch('/conversations', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+    }
+
+    const data: NewChat = await response.json();
+    return data;
   };
+
+  const getConversations = async () => {
+    const response = await fetch('/conversations');
+    if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || 'Failed to fetch conversations');
+    }
+    return response.json();
+  }
+
+  const handleNewChat = async () => {
+    // const newChat: Chat = {
+    //   id: Date.now().toString(),
+    //   title: `New Chat ${chats.length + 1}`,
+    //   messages: [],
+    //   timestamp: new Date().toISOString()
+    // };    
+
+    // setChats([newChat, ...chats]);
+    // setCurrentChatId(newChat.id);
+    const formData = new FormData();
+    formData.append('title', 'New Chat 1'); // Add required fields to the formData object.
+
+    try {
+        const newChat = await fetchNewChat(formData);
+        setConversations([newChat.conversation, ...chats])
+        setCurrentChatId(newChat.conversation.id);
+    } catch (error) {
+        console.error('Failed to create a new chat:', error);
+    }
+  };
+
+  const handleConversations = async () => {
+    try {
+      const response = await getConversations();
+      setChats(response.conversations);
+      setCurrentChatId(response.conversations[0].id);
+  } catch (error) {
+      console.error('Failed to fetch conversations:', error);
+  }
+  }
 
   const handleSelectChat = (chatId: string) => {
     setCurrentChatId(chatId);
@@ -71,7 +131,8 @@ function App() {
   const currentChat = chats.find(chat => chat.id === currentChatId) || null;
 
   React.useEffect(() => {
-    fetchHistories();
+    handleConversations();
+    // fetchHistories();
   }, []);
 
   return (
@@ -81,6 +142,7 @@ function App() {
         chats={chats}
         currentChatId={currentChatId}
         onNewChat={handleNewChat}
+        onUpdatetitle={handleConversations}
         onSelectChat={handleSelectChat}
       />
       <main className="flex-1 relative overflow-hidden">
@@ -93,6 +155,7 @@ function App() {
                 </div>
               )}
               <div className="grid grid-cols-1 gap-8">
+                <TokenContainer />
                 <ChatContainer 
                   key={currentChatId || 'new'} 
                   chatId={currentChatId}

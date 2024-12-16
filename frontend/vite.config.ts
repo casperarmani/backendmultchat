@@ -37,11 +37,19 @@ export default defineConfig({
         target: 'http://0.0.0.0:8080',
         changeOrigin: true
       },
+      '/user/tokens' : {
+        target: 'http://0.0.0.0:8080',
+        changeOrigin: true
+      },
+      '/conversations' : {
+        target: 'http://0.0.0.0:8080',
+        changeOrigin: true
+      },
       '/api': {
         target: 'http://0.0.0.0:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
+        // rewrite: (path) => path.replace(/^\/api/, '')
+      },
     }
   }
 })
