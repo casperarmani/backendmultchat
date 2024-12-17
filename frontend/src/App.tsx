@@ -148,13 +148,17 @@ function App() {
               <div className="grid grid-cols-1 gap-8">
                 <TokenContainer />
                 <div className="flex gap-6"> {/* Modified to accommodate side-by-side layout */}
-                  <ChatContainer 
-                    key={currentChatId || 'new'} 
-                    chatId={currentChatId}
-                    initialMessages={currentChat?.messages || []}
-                    onMessageSent={handleMessageSent}
-                  />
-                  <VideoAnalysisHistory /> {/* Added VideoAnalysisHistory component */}
+                  <div className="w-[800px] flex-shrink-0">
+                    <ChatContainer 
+                      key={currentChatId || 'new'} 
+                      chatId={currentChatId}
+                      initialMessages={currentChat?.messages || []}
+                      onMessageSent={handleMessageSent}
+                    />
+                  </div>
+                  <div className="w-[400px] flex-shrink-0">
+                    <VideoAnalysisHistory />
+                  </div>
                 </div>
               </div>
             </div>
