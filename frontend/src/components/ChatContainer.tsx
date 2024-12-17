@@ -156,7 +156,8 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
     try {
       const formData = new FormData();
-      formData.append('message', message.trim());
+      const messageContent = message.trim();
+      formData.append('message', messageContent);
       
       files.forEach((file) => {
         formData.append('videos', file);
@@ -164,6 +165,15 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
       if(chatId){
         formData.append('conversation_id', chatId);
+        // Only update title if it's the first message
+        if (chatMessages.length === 0) {
+          const titleFormData = new FormData();
+          titleFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
+          await fetch(`/conversations/${chatId}`, {
+            method: 'PUT',
+            body: titleFormData
+          });
+        }
       }
 
       const response = await fetch('/send_message', {
