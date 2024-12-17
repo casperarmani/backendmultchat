@@ -331,7 +331,73 @@ export function Sidebar({
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
               )}>{planInfo}</span>
             </Button>
-            <Button variant="ghost" onClick={() => handleBillings()} className={cn(
+            <Button variant="ghost" onClick={() => {
+              const modal = document.createElement('div');
+              modal.className = 'plan-selection-modal';
+              modal.innerHTML = `
+                <div class="plan-selection-content">
+                  <h2>Choose Your Plan</h2>
+                  <div class="plans-container">
+                    <div class="plan-card">
+                      <h3>Pro Plan</h3>
+                      <div class="price">$99/month</div>
+                      <ul>
+                        <li>500 Tokens per month</li>
+                        <li>Priority support</li>
+                        <li>Advanced analytics</li>
+                      </ul>
+                      <button class="select-plan-btn" data-plan="Pro">Select Pro Plan</button>
+                    </div>
+                    <div class="plan-card">
+                      <h3>Agency Plan</h3>
+                      <div class="price">$299/month</div>
+                      <ul>
+                        <li>1000 Tokens per month</li>
+                        <li>24/7 Premium support</li>
+                        <li>Custom analytics dashboard</li>
+                        <li>API access</li>
+                      </ul>
+                      <button class="select-plan-btn" data-plan="Agency">Select Agency Plan</button>
+                    </div>
+                  </div>
+                  <button class="close-modal">Close</button>
+                </div>
+              `;
+              
+              document.body.appendChild(modal);
+              
+              modal.querySelectorAll('.select-plan-btn').forEach(button => {
+                button.addEventListener('click', async () => {
+                  const selectedPlan = (button as HTMLElement).dataset.plan;
+                  try {
+                    const response = await fetch(`/api/create-checkout-session/${selectedPlan}`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      }
+                    });
+                    const session = await response.json();
+                    window.location.href = session.url;
+                  } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to start checkout process. Please try again.');
+                  }
+                });
+              });
+              
+              const closeButton = modal.querySelector('.close-modal');
+              if (closeButton) {
+                closeButton.addEventListener('click', () => {
+                  modal.remove();
+                });
+              }
+              
+              modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                  modal.remove();
+                }
+              });
+            }} className={cn(
               "w-full justify-start transition-all duration-300 ease-in-out",
               isCollapsed ? "px-2" : "px-4"
             )}>
