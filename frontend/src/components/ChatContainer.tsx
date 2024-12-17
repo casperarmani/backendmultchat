@@ -197,7 +197,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       
       const newUserMessage: Message = {
         type: 'user',
-        content: message.trim(),
+        content: messageContent,
         timestamp: new Date().toISOString()
       };
 
