@@ -30,8 +30,12 @@ import {
   Plus,
   CreditCard,
   Save,
-  Pencil ,
-  Trash
+  Pencil,
+  Trash,
+  Coins,
+  Crown,
+  Bot,
+  Shield
 } from "lucide-react";
 import { Chat } from '@/types';
 import { handleManageSubscription } from '@/components/ui/dropdown-menu'; // Added import
@@ -336,7 +340,7 @@ export function Sidebar({
               "w-full justify-start transition-all duration-300 ease-in-out",
               isCollapsed ? "px-2" : "px-4"
             )}>
-              <CreditCard className="h-4 w-4 shrink-0" />
+              <Coins className="h-4 w-4 shrink-0" />
               <span className={cn(
                 "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
@@ -346,7 +350,7 @@ export function Sidebar({
               "w-full justify-start transition-all duration-300 ease-in-out",
               isCollapsed ? "px-2" : "px-4"
             )}>
-              <Boxes className="h-4 w-4 shrink-0" />
+              <Crown className="h-4 w-4 shrink-0" />
               <span className={cn(
                 "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
@@ -356,7 +360,7 @@ export function Sidebar({
               "w-full justify-start transition-all duration-300 ease-in-out",
               isCollapsed ? "px-2" : "px-4"
             )}>
-              <CreditCard className="h-4 w-4 shrink-0" />
+              <Shield className="h-4 w-4 shrink-0" />
               <span className={cn(
                 "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
@@ -376,7 +380,7 @@ export function Sidebar({
               "w-full justify-start transition-all duration-300 ease-in-out",
               isCollapsed ? "px-2" : "px-4"
             )}>
-              <Boxes className="h-4 w-4 shrink-0" />
+              <Bot className="h-4 w-4 shrink-0" />
               <span className={cn(
                 "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
