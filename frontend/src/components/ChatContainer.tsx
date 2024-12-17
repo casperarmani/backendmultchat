@@ -195,22 +195,9 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
       const data = await response.json();
       
-      const newUserMessage: Message = {
-        type: 'user',
-        content: messageContent,
-        timestamp: new Date().toISOString()
-      };
-
-      const newBotMessage: Message = {
-        type: 'bot',
-        content: data.response,
-        timestamp: new Date().toISOString()
-      };
-      
-      setChatMessages(prev => [...prev, newUserMessage, newBotMessage]);
-      
+      // Let the polling handle message updates
       if (chatId && onMessageSent) {
-        onMessageSent([...chatMessages, newUserMessage, newBotMessage], chatId);
+        onMessageSent(chatMessages, chatId);
       }
       
       setMessage('');
