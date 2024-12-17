@@ -14,12 +14,16 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      <section 
-        className="relative w-full h-screen bg-no-repeat bg-cover bg-center flex items-center"
-        style={{ 
-          backgroundImage: 'url("https://cdn.discordapp.com/attachments/1109371168147914752/1307892127791054878/clear_tree.png?ex=67409236&is=673f40b6&hm=155baa8e57b1f0723cc7ca4547d967ceb0b88f28d9516b9a4dd2fb129ddeeb73&")',
-        }}
-      >
+      <section className="relative w-full h-screen flex items-center">
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        >
+          <source src="/snowgif-ezgif.com-video-to-gif-converter.mp4" type="video/mp4" />
+        </video>
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
           <div className="rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10 p-12">
             <div className="flex justify-between items-center mb-8">
