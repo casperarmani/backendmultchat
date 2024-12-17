@@ -69,8 +69,8 @@ export function Sidebar({
 
   const handleNewChat = async () => {
     await onNewChat();
-    // Force refresh of chat list
-    fetchNewMessages();
+    // Force refresh by calling parent update handler
+    onUpdatetitle();
   };
 
   const handleBillings = async () => {
