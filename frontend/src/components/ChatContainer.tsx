@@ -253,7 +253,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   };
 
   return (
-    <div className="flex flex-col h-screen rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
+    <div className="flex flex-col h-[98vh] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
       <ChatHeader />
       {chatMessages.length === 0 && <ChatWelcome />}
       
