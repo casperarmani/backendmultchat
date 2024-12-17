@@ -67,6 +67,12 @@ export function Sidebar({
     }
   };
 
+  const handleNewChat = async () => {
+    await onNewChat();
+    // Force refresh of chat list
+    fetchNewMessages();
+  };
+
   const handleBillings = async () => {
     try {
       const response = await fetch('/api/create-portal-session', {
@@ -187,7 +193,7 @@ export function Sidebar({
       <Separator />
       <div className="px-3 py-2">
         <Button
-          onClick={onNewChat}
+          onClick={handleNewChat}
           className={cn(
             "w-full justify-start mb-2",
             isCollapsed ? "px-2" : "px-4"
