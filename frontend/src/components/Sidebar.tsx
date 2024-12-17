@@ -407,6 +407,43 @@ export function Sidebar({
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
               )}>Upgrade Plan</span>
             </Button>
+            {showPlansModal && (
+              <div className="plan-selection-modal" onClick={() => setShowPlansModal(false)}>
+                <div className="plan-selection-content" onClick={e => e.stopPropagation()}>
+                  <h2 className="text-2xl font-semibold mb-4">Choose Your Plan</h2>
+                  <div className="plans-container">
+                    <div className="plan-card">
+                      <h3 className="text-xl font-medium">Pro Plan</h3>
+                      <div className="text-3xl font-bold my-4">$99/month</div>
+                      <ul className="text-left mb-4">
+                        <li>500 Tokens per month</li>
+                        <li>Priority support</li>
+                        <li>Advanced analytics</li>
+                      </ul>
+                      <button className="select-plan-btn" onClick={() => handleSelectPlan('Pro')}>
+                        Select Pro Plan
+                      </button>
+                    </div>
+                    <div className="plan-card">
+                      <h3 className="text-xl font-medium">Agency Plan</h3>
+                      <div className="text-3xl font-bold my-4">$299/month</div>
+                      <ul className="text-left mb-4">
+                        <li>1000 Tokens per month</li>
+                        <li>24/7 Premium support</li>
+                        <li>Custom analytics dashboard</li>
+                        <li>API access</li>
+                      </ul>
+                      <button className="select-plan-btn" onClick={() => handleSelectPlan('Agency')}>
+                        Select Agency Plan
+                      </button>
+                    </div>
+                  </div>
+                  <button className="close-modal" onClick={() => setShowPlansModal(false)}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
             
           </div>
         </div>
