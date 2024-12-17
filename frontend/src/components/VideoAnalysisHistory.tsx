@@ -30,12 +30,12 @@ function VideoAnalysisHistory() {
   }, []);
 
   return (
-    <Card className="h-[800px] w-[400px] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
+    <Card className="h-screen w-[400px] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
       <CardHeader>
         <CardTitle>Video Analysis History</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[700px] w-full rounded-md pr-4">
+        <ScrollArea className="h-[calc(100vh-80px)] w-full rounded-md pr-4">
           {videoHistory.length > 0 ? (
             <div className="space-y-4">
               {videoHistory.map((analysis, index) => (
