@@ -7,6 +7,15 @@ channel = "stable-24_05"
 [workflows]
 
 [[workflows.workflow]]
+name = "Backend"
+mode = "sequential"
+author = 37267323
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
+
+[[workflows.workflow]]
 name = "Frontend"
 mode = "sequential"
 author = 37267323
