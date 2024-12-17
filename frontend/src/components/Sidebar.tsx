@@ -306,7 +306,7 @@ export function Sidebar({
             "mb-2 px-4 text-lg font-semibold tracking-tight transition-all duration-300 ease-in-out",
             isCollapsed && "opacity-0 h-0 mb-0"
           )}>
-            Resources
+            Plan
           </h2>
           <div className="space-y-1">
             <Button variant="ghost" className={cn(
