@@ -302,11 +302,6 @@ export function Sidebar({
         </div>
         <Separator className="my-2" />
         <div className="px-3 py-2">
-          <div className="space-y-1">
-            </div>
-        </div>
-        <Separator className="my-2" />
-        <div className="px-3 py-2">
           <h2 className={cn(
             "mb-2 px-4 text-lg font-semibold tracking-tight transition-all duration-300 ease-in-out",
             isCollapsed && "opacity-0 h-0 mb-0"
