@@ -366,36 +366,7 @@ export function Sidebar({
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
               )}>Upgrade Plan</span>
             </Button>
-            <Button variant="ghost" className={cn(
-              "w-full justify-start transition-all duration-300 ease-in-out",
-              isCollapsed ? "px-2" : "px-4"
-            )}>
-              <Book className="h-4 w-4 shrink-0" />
-              <span className={cn(
-                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>Documentation</span>
-            </Button>
-            <Button variant="ghost" className={cn(
-              "w-full justify-start transition-all duration-300 ease-in-out",
-              isCollapsed ? "px-2" : "px-4"
-            )}>
-              <Bot className="h-4 w-4 shrink-0" />
-              <span className={cn(
-                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>Models</span>
-            </Button>
-            <Button variant="ghost" className={cn(
-              "w-full justify-start transition-all duration-300 ease-in-out",
-              isCollapsed ? "px-2" : "px-4"
-            )}>
-              <Settings className="h-4 w-4 shrink-0" />
-              <span className={cn(
-                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>Settings</span>
-            </Button>
+            
           </div>
         </div>
       </ScrollArea>
