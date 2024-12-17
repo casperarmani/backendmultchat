@@ -243,7 +243,7 @@ export function Sidebar({
           )}>
             Recent Chats
           </h2>
-          <ScrollArea className="flex-1 h-[300px]">
+          <ScrollArea className="flex-1 h-[600px]">
             <div className="space-y-1">
               {chats.map((chat) => (
                 <Button
