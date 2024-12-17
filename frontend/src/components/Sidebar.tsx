@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -55,6 +56,32 @@ export function Sidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { logout, user } = useAuth();
   const [editingId, setEditingId] = useState("");
+  const [tokenBalance, setTokenBalance] = useState('Loading...');
+  const [planInfo, setPlanInfo] = useState('Loading...');
+  const [showPlansModal, setShowPlansModal] = useState(false);
+
+  useEffect(() => {
+    const fetchTokenInfo = async () => {
+      try {
+        const response = await fetch('/user/tokens');
+        const data = await response.json();
+        setTokenBalance(`${data.token_balance} tokens`);
+        setPlanInfo(
+          data.subscription?.subscription_tiers
+            ? `${data.subscription.subscription_tiers.tier_name}`
+            : 'No subscription'
+        );
+      } catch (error) {
+        console.error('Error fetching token info:', error);
+        setTokenBalance('Error loading');
+        setPlanInfo('Error loading');
+      }
+    };
+    
+    if (user) {
+      fetchTokenInfo();
+    }
+  }, [user]);
   const [changedTitle, setChangedTitle] = useState("");
   const navigate = useNavigate();
 
@@ -305,6 +332,36 @@ export function Sidebar({
             Resources
           </h2>
           <div className="space-y-1">
+            <Button variant="ghost" className={cn(
+              "w-full justify-start transition-all duration-300 ease-in-out",
+              isCollapsed ? "px-2" : "px-4"
+            )}>
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <span className={cn(
+                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
+                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+              )}>{tokenBalance}</span>
+            </Button>
+            <Button variant="ghost" className={cn(
+              "w-full justify-start transition-all duration-300 ease-in-out",
+              isCollapsed ? "px-2" : "px-4"
+            )}>
+              <Boxes className="h-4 w-4 shrink-0" />
+              <span className={cn(
+                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
+                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+              )}>{planInfo}</span>
+            </Button>
+            <Button variant="ghost" onClick={() => handleBillings()} className={cn(
+              "w-full justify-start transition-all duration-300 ease-in-out",
+              isCollapsed ? "px-2" : "px-4"
+            )}>
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <span className={cn(
+                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
+                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+              )}>Upgrade Plan</span>
+            </Button>
             <Button variant="ghost" className={cn(
               "w-full justify-start transition-all duration-300 ease-in-out",
               isCollapsed ? "px-2" : "px-4"

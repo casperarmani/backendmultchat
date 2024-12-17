@@ -146,8 +146,7 @@ function App() {
                 </div>
               )}
               <div className="grid grid-cols-1 gap-8">
-                <TokenContainer />
-                <div className="flex gap-6 h-[calc(100vh-12rem)]"> {/* Added height calculation */}
+                <div className="flex gap-6 h-[calc(100vh-8rem)]"> {/* Added height calculation */}
                   <div className="flex-1 min-w-0"> {/* Changed to flex-1 to fill space */}
                     <ChatContainer 
                       key={currentChatId || 'new'} 
