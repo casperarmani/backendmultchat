@@ -4,6 +4,7 @@ import TokenContainer from './components/TokenContainer';
 import History from './components/History';
 import { Sidebar } from './components/Sidebar';
 import { ChatHistory, VideoHistory, ApiResponse, Chat, Message } from './types';
+import VideoAnalysisHistory from "./components/VideoAnalysisHistory"; // Added import
 
 function App() {
   const [chatHistory, setChatHistory] = React.useState<ChatHistory[]>([]);
@@ -82,17 +83,8 @@ function App() {
   }
 
   const handleNewChat = async () => {
-    // const newChat: Chat = {
-    //   id: Date.now().toString(),
-    //   title: `New Chat ${chats.length + 1}`,
-    //   messages: [],
-    //   timestamp: new Date().toISOString()
-    // };    
-
-    // setChats([newChat, ...chats]);
-    // setCurrentChatId(newChat.id);
     const formData = new FormData();
-    formData.append('title', 'New Chat 1'); // Add required fields to the formData object.
+    formData.append('title', 'New Chat 1'); 
 
     try {
         const newChat = await fetchNewChat(formData);
@@ -132,7 +124,6 @@ function App() {
 
   React.useEffect(() => {
     handleConversations();
-    // fetchHistories();
   }, []);
 
   return (
@@ -156,12 +147,15 @@ function App() {
               )}
               <div className="grid grid-cols-1 gap-8">
                 <TokenContainer />
-                <ChatContainer 
-                  key={currentChatId || 'new'} 
-                  chatId={currentChatId}
-                  initialMessages={currentChat?.messages || []}
-                  onMessageSent={handleMessageSent}
-                />
+                <div className="flex gap-6"> {/* Modified to accommodate side-by-side layout */}
+                  <ChatContainer 
+                    key={currentChatId || 'new'} 
+                    chatId={currentChatId}
+                    initialMessages={currentChat?.messages || []}
+                    onMessageSent={handleMessageSent}
+                  />
+                  <VideoAnalysisHistory videoHistory={videoHistory} /> {/* Added VideoAnalysisHistory component */}
+                </div>
               </div>
             </div>
           </div>
