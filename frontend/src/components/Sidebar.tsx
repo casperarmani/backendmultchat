@@ -17,8 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   MessageSquare,
-  Upload,
-  History as HistoryIcon,
   Settings,
   ChevronDown,
   LogOut,
@@ -305,27 +303,7 @@ export function Sidebar({
         <Separator className="my-2" />
         <div className="px-3 py-2">
           <div className="space-y-1">
-            <Button variant="ghost" className={cn(
-              "w-full justify-start transition-all duration-300 ease-in-out",
-              isCollapsed ? "px-2" : "px-4"
-            )}>
-              <Upload className="h-4 w-4 shrink-0" />
-              <span className={cn(
-                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>Upload Video</span>
-            </Button>
-            <Button variant="ghost" className={cn(
-              "w-full justify-start transition-all duration-300 ease-in-out",
-              isCollapsed ? "px-2" : "px-4"
-            )}>
-              <HistoryIcon className="h-4 w-4 shrink-0" />
-              <span className={cn(
-                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>History</span>
-            </Button>
-          </div>
+            </div>
         </div>
         <Separator className="my-2" />
         <div className="px-3 py-2">
