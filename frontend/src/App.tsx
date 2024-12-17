@@ -137,7 +137,7 @@ function App() {
         onSelectChat={handleSelectChat}
       />
       <main className="flex-1 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://cdn.discordapp.com/attachments/1109371168147914752/1307892127791054878/clear_tree.png?ex=673fe976&is=673e97f6&hm=11dc4f696c3649b07b95b10eadd1d0747d19b7021704a32189492ccab073baa7&')] bg-cover bg-center">
+        <div className="absolute inset-0 bg-[url('https://cdn.discordapp.com/attachments/665829483562926121/1318406387004346378/clear_tree.png?ex=6762dde1&is=67618c61&hm=5e417c5f0f203bb9a63ad42876c2735c59ec0cdcaa10f12ef2b4d839733c1e34&')] bg-cover bg-center">
           <div className="h-full overflow-auto">
             <div className="container mx-auto px-4 py-8">
               {error && (
