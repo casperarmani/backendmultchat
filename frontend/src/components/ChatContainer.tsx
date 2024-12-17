@@ -171,8 +171,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
           titleFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
           await fetch(`/conversations/${chatId}`, {
             method: 'PUT',
-            body: titleFormData
+            body: titleFormData,
+            credentials: 'include'
           });
+          // Force parent component update
+          if (onMessageSent) {
+            onMessageSent([], chatId);
+          }
         }
       }
 

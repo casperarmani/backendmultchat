@@ -98,8 +98,10 @@ export function Sidebar({
 
   const handleNewChat = async () => {
     await onNewChat();
-    // Force refresh by calling parent update handler
-    onUpdatetitle();
+    // Force refresh by calling parent update handler immediately
+    setTimeout(() => {
+      onUpdatetitle();
+    }, 100);
   };
 
   const handleBillings = async () => {
