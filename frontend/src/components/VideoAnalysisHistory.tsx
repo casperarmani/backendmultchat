@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -9,11 +9,26 @@ interface VideoHistory {
   analysis: string;
 }
 
-interface VideoAnalysisHistoryProps {
-  videoHistory: VideoHistory[];
-}
+function VideoAnalysisHistory() {
+  const [videoHistory, setVideoHistory] = useState<VideoHistory[]>([]);
 
-function VideoAnalysisHistory({ videoHistory }: VideoAnalysisHistoryProps) {
+  useEffect(() => {
+    const fetchVideoHistory = async () => {
+      try {
+        const response = await fetch('/video_analysis_history');
+        if (!response.ok) {
+          throw new Error('Failed to fetch video history');
+        }
+        const data = await response.json();
+        setVideoHistory(data.history || []);
+      } catch (error) {
+        console.error('Error fetching video history:', error);
+      }
+    };
+
+    fetchVideoHistory();
+  }, []);
+
   return (
     <Card className="h-[800px] w-[400px] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
       <CardHeader>

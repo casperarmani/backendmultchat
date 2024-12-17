@@ -154,7 +154,7 @@ function App() {
                     initialMessages={currentChat?.messages || []}
                     onMessageSent={handleMessageSent}
                   />
-                  <VideoAnalysisHistory videoHistory={videoHistory} /> {/* Added VideoAnalysisHistory component */}
+                  <VideoAnalysisHistory /> {/* Added VideoAnalysisHistory component */}
                 </div>
               </div>
             </div>
