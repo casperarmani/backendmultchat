@@ -14,42 +14,50 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/auth_status': {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
       '/login': {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
       '/logout': {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
       '/chat_history': {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
       '/video_analysis_history': {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
       '/send_message': {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
-      '/user/tokens' : {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+      '/user/tokens': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
-      '/conversations' : {
-        target: 'http://0.0.0.0:8080',
-        changeOrigin: true
+      '/conversations': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        secure: false
       },
       '/api': {
-        target: 'http://0.0.0.0:8080',
+        target: 'http://127.0.0.1:8080',
         changeOrigin: true,
-        // rewrite: (path) => path.replace(/^\/api/, '')
-      },
+        secure: false
+      }
     }
   }
 })
