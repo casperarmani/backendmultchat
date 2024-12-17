@@ -214,17 +214,18 @@ export function Sidebar({
           )}>
             Recent Chats
           </h2>
-          <div className="space-y-1">
-            {chats.map((chat) => (
-              <Button
-                key={chat.id}
-                variant={currentChatId === chat.id ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-between transition-all duration-300 ease-in-out flex",
-                  isCollapsed ? "px-2" : "px-4"
-                )}
-                onClick={() => onSelectChat(chat.id)}
-              >
+          <ScrollArea className="flex-1 h-[300px]">
+            <div className="space-y-1">
+              {chats.map((chat) => (
+                <Button
+                  key={chat.id}
+                  variant={currentChatId === chat.id ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-between transition-all duration-300 ease-in-out flex",
+                    isCollapsed ? "px-2" : "px-4"
+                  )}
+                  onClick={() => onSelectChat(chat.id)}
+                >
                 <div className='flex items-center justify-between w-full'>
                   <div className='flex items-center'>
                     <MessageSquare className="h-4 w-4 shrink-0" />
@@ -266,8 +267,9 @@ export function Sidebar({
                   )}
                 </div>
               </Button>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
         <Separator className="my-2" />
         <div className="px-3 py-2">
