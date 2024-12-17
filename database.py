@@ -89,10 +89,10 @@ async def get_video_analysis_history(user_id: uuid.UUID, limit: int = 10) -> Lis
     return response.data
 
 
-async def get_user_conversations(user_id: uuid.UUID, limit: int = 10) -> List[Dict]:
+async def get_user_conversations(user_id: uuid.UUID) -> List[Dict]:
     """Get all conversations for a user"""
     try:
-        response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", "null").order("created_at", desc=True).limit(limit).execute()
+        response = supabase.table("conversations").select("*").eq("user_id", str(user_id)).is_("deleted_at", "null").order("created_at", desc=True).execute()
         return response.data
     except Exception as e:
         logger.error(f"Error getting conversations: {str(e)}")
