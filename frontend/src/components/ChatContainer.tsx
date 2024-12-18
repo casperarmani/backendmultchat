@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback  } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { ChatHeader } from './chat/ChatHeader';
@@ -27,14 +28,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   const [error, setError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null); // Ref for the ScrollArea
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
-  const INITIAL_POLL_INTERVAL = 1000; // 1 second
+  const INITIAL_POLL_INTERVAL = 1000;
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMessageTimestampRef = useRef<string | null>(null);
-  const isFetchingRef = useRef<boolean>(false); // Prevent concurrent fetches
+  const isFetchingRef = useRef<boolean>(false);
 
-   // Scroll to the bottom of the chat
   const scrollToBottom = useCallback(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
@@ -60,15 +60,6 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     }
   }, [handleScroll]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!message.trim() && files.length === 0) || isLoading) return;
-
-    setShouldAutoScroll(true);
-    setIsLoading(true);
-    setError(null);
-  };
-
   useEffect(() => {
     if (chatMessages.length > 0 && shouldAutoScroll && isNearBottom) {
       scrollToBottom();
@@ -85,19 +76,16 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     fetchChatHistory();
   }, []);
 
-  // Start polling when chatId changes or component mounts
   useEffect(() => {
     if (chatId) {
       startPolling();
     }
-
-    return () => stopPolling(); // Cleanup on unmount
+    return () => stopPolling();
   }, [chatId]);
 
   const fetchNewMessages = useCallback(async () => {
-     if (!chatId || isFetchingRef.current) return; // Skip if already fetching
-
-    isFetchingRef.current = true; // Mark as fetching
+    if (!chatId || isFetchingRef.current) return;
+    isFetchingRef.current = true;
 
     try {
       const response = await fetch(`/conversations/${chatId}/messages`);
@@ -110,31 +98,30 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       
       const data = await response.json();
       if (data.messages && Array.isArray(data.messages)) {
-          const formattedMessages: Message[] = data.messages.map((msg: any) => ({
-            type: msg.chat_type === 'bot' ? 'bot' : 'user',
-            content: msg.message,
-            timestamp: msg.TIMESTAMP
-          }));
-          const sortedMessages: Message[] = formattedMessages.sort((a, b) => {
-            const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-            const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-            return dateA - dateB;
-         });
+        const formattedMessages: Message[] = data.messages.map((msg: any) => ({
+          type: msg.chat_type === 'bot' ? 'bot' : 'user',
+          content: msg.message,
+          timestamp: msg.TIMESTAMP
+        }));
+        const sortedMessages: Message[] = formattedMessages.sort((a, b) => {
+          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return dateA - dateB;
+        });
 
         setChatMessages(sortedMessages);
       }
     } catch (error) {
       console.error('Error fetching new messages:', error);
     } finally {
-      isFetchingRef.current = false; // Mark as not fetching
+      isFetchingRef.current = false;
     }
   }, [chatId]);
 
   const startPolling = useCallback(() => {
-    stopPolling(); // Ensure no duplicate intervals
+    stopPolling();
     pollIntervalRef.current = setInterval(fetchNewMessages, INITIAL_POLL_INTERVAL);
   }, [fetchNewMessages]);
-
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -161,21 +148,20 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       
       const data = await response.json();
       if (data.history && Array.isArray(data.history)) {
-          const filteredMessage = data.history.filter((msg:any) => msg.conversation_id === chatId);
-          const formattedMessages: Message[] = filteredMessage.map((msg: any) => ({
-            type: msg.chat_type === 'bot' ? 'bot' : 'user',
-            content: msg.message,
-            timestamp: msg.TIMESTAMP
-          }));
-          const sortedMessages: Message[] = formattedMessages.sort((a, b) => {
-            const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-            const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-            return dateA - dateB;
-         });
+        const filteredMessage = data.history.filter((msg:any) => msg.conversation_id === chatId);
+        const formattedMessages: Message[] = filteredMessage.map((msg: any) => ({
+          type: msg.chat_type === 'bot' ? 'bot' : 'user',
+          content: msg.message,
+          timestamp: msg.TIMESTAMP
+        }));
+        const sortedMessages: Message[] = formattedMessages.sort((a, b) => {
+          const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return dateA - dateB;
+        });
 
         setChatMessages(sortedMessages);
       }
-
     } catch (error) {
       console.error('Error fetching chat history:', error);
       setError('Failed to load chat history');
@@ -186,6 +172,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     e.preventDefault();
     if ((!message.trim() && files.length === 0) || isLoading) return;
 
+    setShouldAutoScroll(true);
     setIsLoading(true);
     setError(null);
 
@@ -200,7 +187,6 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
       if(chatId){
         formData.append('conversation_id', chatId);
-        // Only update title if it's the first message
         if (chatMessages.length === 0) {
           const titleFormData = new FormData();
           titleFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
@@ -209,7 +195,6 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
             body: titleFormData,
             credentials: 'include'
           });
-          // Force parent component update
           if (onMessageSent) {
             onMessageSent([], chatId);
           }
@@ -230,7 +215,6 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
       const data = await response.json();
       
-      // Let the polling handle message updates
       if (chatId && onMessageSent) {
         onMessageSent(chatMessages, chatId);
       }
