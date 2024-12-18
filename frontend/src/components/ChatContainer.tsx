@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback  } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { ChatHeader } from './chat/ChatHeader';
@@ -185,21 +184,41 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         formData.append('videos', file);
       });
 
-      if(chatId){
-        formData.append('conversation_id', chatId);
-        if (chatMessages.length === 0) {
-          const titleFormData = new FormData();
-          titleFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
-          await fetch(`/conversations/${chatId}`, {
-            method: 'PUT',
-            body: titleFormData,
-            credentials: 'include'
+      // If no chat exists, create one first
+      let chatIdToUse = chatId;
+      if (!chatIdToUse) {
+          const newChatFormData = new FormData();
+          newChatFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
+          const newChatResponse = await fetch('/conversations', {
+              method: 'POST',
+              body: newChatFormData,
+              credentials: 'include'
           });
-          if (onMessageSent) {
-            onMessageSent([], chatId);
+          const newChatData = await newChatResponse.json();
+          if (newChatData.success && newChatData.conversation) {
+              chatIdToUse = newChatData.conversation.id;
+              if (onMessageSent) {
+                  onMessageSent([{ type: 'user', content: messageContent }], chatIdToUse);
+              }
+          } else {
+            throw new Error("Failed to create new chat");
           }
+      }
+      formData.append('conversation_id', chatIdToUse!);
+
+      if (chatMessages.length === 0 && chatIdToUse) {
+        const titleFormData = new FormData();
+        titleFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
+        await fetch(`/conversations/${chatIdToUse}`, {
+          method: 'PUT',
+          body: titleFormData,
+          credentials: 'include'
+        });
+        if (onMessageSent) {
+          onMessageSent([], chatIdToUse);
         }
       }
+
 
       const response = await fetch('/send_message', {
         method: 'POST',
@@ -215,8 +234,8 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
       const data = await response.json();
       
-      if (chatId && onMessageSent) {
-        onMessageSent(chatMessages, chatId);
+      if (chatIdToUse && onMessageSent) {
+        onMessageSent(chatMessages, chatIdToUse);
       }
       
       setMessage('');
