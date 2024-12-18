@@ -60,13 +60,6 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     }
   }, [handleScroll]);
 
-  useEffect(() => {
-    if (chatMessages.length > 0 && shouldAutoScroll && isNearBottom) {
-      scrollToBottom();
-    }
-  }, [chatMessages, scrollToBottom, shouldAutoScroll, isNearBottom]);
-
-  // Set shouldAutoScroll to true when sending a message
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!message.trim() && files.length === 0) || isLoading) return;
@@ -74,6 +67,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     setShouldAutoScroll(true);
     setIsLoading(true);
     setError(null);
+  };
+
+  useEffect(() => {
+    if (chatMessages.length > 0 && shouldAutoScroll && isNearBottom) {
+      scrollToBottom();
+    }
+  }, [chatMessages, scrollToBottom, shouldAutoScroll, isNearBottom]);
 
   useEffect(() => {
     if (initialMessages.length > 0 && chatMessages.length === 0) {
