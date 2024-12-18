@@ -213,7 +213,7 @@ chatbot = Chatbot()
 
 from auth import get_current_user
 
-@app.post('/signup')
+@app.post('/api/signup')
 async def signup(
     request: Request,
     email: str = Form(...),
@@ -281,7 +281,7 @@ async def signup(
             content={"success": False, "message": "Internal server error"}
         )
 
-@app.post('/login')
+@app.post('/api/login')
 async def login_post(
     request: Request,
     email: str = Form(...),

@@ -138,6 +138,22 @@ async def get_current_subscription(
         logger.error(f"Event data: {event['data'] if event else 'No data'}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/subscriptions/current-status")
+async def get_current_subscription(
+    current_user: Dict = Depends(get_current_user)
+):
+    """Get current user's subscription details"""
+    try:
+        user_id = uuid.UUID(current_user['id'])
+        subscription = await database.get_user_subscription(user_id)
+
+        return subscription
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        logger.error(f"Event type: {event['type'] if event else 'No event'}")
+        logger.error(f"Event data: {event['data'] if event else 'No data'}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/webhooks/stripe")
 async def stripe_webhook(
     request: Request,

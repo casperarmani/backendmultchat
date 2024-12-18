@@ -60,8 +60,8 @@ export function Sidebar({
   const [editingId, setEditingId] = useState("");
   const [tokenBalance, setTokenBalance] = useState('Loading...');
   const [planInfo, setPlanInfo] = useState('Loading...');
-  const [showPlansModal, setShowPlansModal] = useState(false);
-
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [isCustomer, setIsCustomer] = useState(true);
   useEffect(() => {
     const fetchTokenInfo = async () => {
       try {
@@ -79,9 +79,30 @@ export function Sidebar({
         setPlanInfo('Error loading');
       }
     };
+
+    const checkCustomerInfor = async () => {
+      try {
+        const response = await fetch('/api/subscriptions/current-status');
+        const data = await response.json();
+        if (!data.stripe_customer_id) {
+          setShowPlanModal(true);
+          setIsCustomer(false);
+        } else {
+          setShowPlanModal(false);
+        }
+        
+      
+      } catch (error) {
+        console.error('Error fetching token info:', error);
+        setTokenBalance('Error loading');
+        setPlanInfo('Error loading');
+      }
+    };
+    
     
     if (user) {
       fetchTokenInfo();
+      checkCustomerInfor();
     }
   }, [user]);
   const [changedTitle, setChangedTitle] = useState("");
@@ -182,7 +203,78 @@ export function Sidebar({
         console.error('Error deleting conversation:', error);
         throw error;
     }
-  }
+  };
+
+  const handlePlanSelection = async (plan: string) => {
+    try {
+      const response = await fetch(`/api/create-checkout-session/${plan}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const session = await response.json();
+      window.location.href = session.url; // Redirect to checkout
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Failed to start checkout process. Please try again.");
+    }
+  };
+
+  const renderPlanModal = () => (
+    <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
+      <div className="plan-selection-content bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+        <h2 className="text-2xl font-bold mb-6 text-center">Choose Your Plan</h2>
+  
+        <div className="plans-container grid grid-cols-1 gap-6">
+          {/* Pro Plan */}
+          <div className="plan-card border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-2">Pro Plan</h3>
+            <div className="price text-xl font-bold text-blue-500 mb-4">$99/month</div>
+            <ul className="text-sm text-gray-600 list-disc ml-4 space-y-2">
+              <li>500 Tokens per month</li>
+              <li>Priority support</li>
+              <li>Advanced analytics</li>
+            </ul>
+            <button
+              onClick={() => handlePlanSelection("Pro")}
+              className="mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Select Pro Plan
+            </button>
+          </div>
+  
+          {/* Agency Plan */}
+          <div className="plan-card border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-2">Agency Plan</h3>
+            <div className="price text-xl font-bold text-blue-500 mb-4">$299/month</div>
+            <ul className="text-sm text-gray-600 list-disc ml-4 space-y-2">
+              <li>1000 Tokens per month</li>
+              <li>24/7 Premium support</li>
+              <li>Custom analytics dashboard</li>
+              <li>API access</li>
+            </ul>
+            <button
+              onClick={() => handlePlanSelection("Agency")}
+              className="mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Select Agency Plan
+            </button>
+          </div>
+        </div>
+  
+        {isCustomer && (
+          <button
+            onClick={() => setShowPlanModal(false)}
+            className="close-modal mt-6 w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+          >
+            Close
+          </button>
+        )}
+      </div>
+    </div>
+  );
+  
 
   return (
     <div 
@@ -331,120 +423,25 @@ export function Sidebar({
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
               )}>{planInfo}</span>
             </Button>
-            <Button variant="ghost" onClick={() => {
-              const modal = document.createElement('div');
-              modal.className = 'plan-selection-modal';
-              modal.innerHTML = `
-                <div class="plan-selection-content">
-                  <h2>Choose Your Plan</h2>
-                  <div class="plans-container">
-                    <div class="plan-card">
-                      <h3>Pro Plan</h3>
-                      <div class="price">$99/month</div>
-                      <ul>
-                        <li>500 Tokens per month</li>
-                        <li>Priority support</li>
-                        <li>Advanced analytics</li>
-                      </ul>
-                      <button class="select-plan-btn" data-plan="Pro">Select Pro Plan</button>
-                    </div>
-                    <div class="plan-card">
-                      <h3>Agency Plan</h3>
-                      <div class="price">$299/month</div>
-                      <ul>
-                        <li>1000 Tokens per month</li>
-                        <li>24/7 Premium support</li>
-                        <li>Custom analytics dashboard</li>
-                        <li>API access</li>
-                      </ul>
-                      <button class="select-plan-btn" data-plan="Agency">Select Agency Plan</button>
-                    </div>
-                  </div>
-                  <button class="close-modal">Close</button>
-                </div>
-              `;
-              
-              document.body.appendChild(modal);
-              
-              modal.querySelectorAll('.select-plan-btn').forEach(button => {
-                button.addEventListener('click', async () => {
-                  const selectedPlan = (button as HTMLElement).dataset.plan;
-                  try {
-                    const response = await fetch(`/api/create-checkout-session/${selectedPlan}`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      }
-                    });
-                    const session = await response.json();
-                    window.location.href = session.url;
-                  } catch (error) {
-                    console.error('Error:', error);
-                    alert('Failed to start checkout process. Please try again.');
-                  }
-                });
-              });
-              
-              const closeButton = modal.querySelector('.close-modal');
-              if (closeButton) {
-                closeButton.addEventListener('click', () => {
-                  modal.remove();
-                });
-              }
-              
-              modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                  modal.remove();
-                }
-              });
-            }} className={cn(
-              "w-full justify-start transition-all duration-300 ease-in-out",
-              isCollapsed ? "px-2" : "px-4"
-            )}>
-              <Shield className="h-4 w-4 shrink-0" />
-              <span className={cn(
-                "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>Upgrade Plan</span>
+            {showPlanModal && renderPlanModal()}
+            <Button
+                variant="ghost"
+                onClick={() => setShowPlanModal(true)}
+                className={cn(
+                  "w-full justify-start transition-all duration-300 ease-in-out",
+                  isCollapsed ? "px-2" : "px-4"
+                )}
+              >
+                <Shield className="h-4 w-4 shrink-0" />
+                <span
+                  className={cn(
+                    "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
+                    isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                  )}
+                >
+                  Upgrade Plan
+                </span>
             </Button>
-            {showPlansModal && (
-              <div className="plan-selection-modal" onClick={() => setShowPlansModal(false)}>
-                <div className="plan-selection-content" onClick={e => e.stopPropagation()}>
-                  <h2>Choose Your Plan</h2>
-                  <div className="plans-container">
-                    <div className="plan-card">
-                      <h3>Pro Plan</h3>
-                      <div className="price">$99/month</div>
-                      <ul>
-                        <li>500 Tokens per month</li>
-                        <li>Priority support</li>
-                        <li>Advanced analytics</li>
-                      </ul>
-                      <button className="select-plan-btn" onClick={() => handleSelectPlan('Pro')}>
-                        Select Pro Plan
-                      </button>
-                    </div>
-                    <div className="plan-card">
-                      <h3>Agency Plan</h3>
-                      <div className="price">$299/month</div>
-                      <ul>
-                        <li>1000 Tokens per month</li>
-                        <li>24/7 Premium support</li>
-                        <li>Custom analytics dashboard</li>
-                        <li>API access</li>
-                      </ul>
-                      <button className="select-plan-btn" onClick={() => handleSelectPlan('Agency')}>
-                        Select Agency Plan
-                      </button>
-                    </div>
-                  </div>
-                  <button className="close-modal" onClick={() => setShowPlansModal(false)}>
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
-            
           </div>
         </div>
       </ScrollArea>

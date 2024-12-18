@@ -27,18 +27,24 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   const [error, setError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null); // Ref for the ScrollArea
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const INITIAL_POLL_INTERVAL = 1000; // 1 second
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMessageTimestampRef = useRef<string | null>(null);
   const isFetchingRef = useRef<boolean>(false); // Prevent concurrent fetches
 
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+   // Scroll to the bottom of the chat
+  const scrollToBottom = useCallback(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
-  }, [chatMessages]);
+  }, []);
+
+  // Scroll to the bottom whenever messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, scrollToBottom]);
 
   useEffect(() => {
     if (initialMessages.length > 0 && chatMessages.length === 0) {
@@ -202,6 +208,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       
       setMessage('');
       setFiles([]);
+      scrollToBottom();
     } catch (err) {
       console.error('Error:', err);
       setError('Failed to send message. Please try again.');
@@ -259,7 +266,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       <ChatHeader />
       {chatMessages.length === 0 && <ChatWelcome />}
       
-      <ScrollArea className="flex-grow px-6">
+      <ScrollArea className="flex-grow px-6" ref={scrollAreaRef}>
         <div className="space-y-6">
           {chatMessages.map((msg, index) => (
             <ChatMessage key={index} message={msg} />

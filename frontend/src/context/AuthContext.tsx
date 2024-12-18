@@ -8,6 +8,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  signup: (email: string, _password: string) => Promise<{ success: boolean; message?: string }>;
   login: (email: string, _password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
@@ -62,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       formData.append('email', email);
       formData.append('password', _password);
 
-      const response = await fetch('/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         credentials: 'include',
         body: formData
@@ -87,6 +88,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signup = async (email: string, _password: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('password', _password);
+
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        return { success: true };
+      }
+      
+      return { 
+        success: false, 
+        message: data.message || 'Signup failed'
+      };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Signup failed. Please try again.'
+      };
+    }
+  };
+
   const logout = async () => {
     try {
       await fetch('/logout', {
@@ -100,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, signup, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
