@@ -135,7 +135,7 @@ async def get_current_subscription(
                 "status": "active",
                 "subscription_tiers": {
                     "tier_name": "Free",
-                    "tokens": 100
+                    "tokens": 90
                 }
             }
 
