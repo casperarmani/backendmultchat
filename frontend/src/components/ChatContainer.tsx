@@ -41,10 +41,39 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     }
   }, []);
 
-  // Scroll to the bottom whenever messages change
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+
+  const handleScroll = useCallback(() => {
+    if (scrollAreaRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
+      const scrollPosition = scrollHeight - scrollTop - clientHeight;
+      setIsNearBottom(scrollPosition < 100);
+    }
+  }, []);
+
   useEffect(() => {
-    scrollToBottom();
-  }, [chatMessages, scrollToBottom]);
+    const scrollArea = scrollAreaRef.current;
+    if (scrollArea) {
+      scrollArea.addEventListener('scroll', handleScroll);
+      return () => scrollArea.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+
+  useEffect(() => {
+    if (chatMessages.length > 0 && shouldAutoScroll && isNearBottom) {
+      scrollToBottom();
+    }
+  }, [chatMessages, scrollToBottom, shouldAutoScroll, isNearBottom]);
+
+  // Set shouldAutoScroll to true when sending a message
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!message.trim() && files.length === 0) || isLoading) return;
+
+    setShouldAutoScroll(true);
+    setIsLoading(true);
+    setError(null);
 
   useEffect(() => {
     if (initialMessages.length > 0 && chatMessages.length === 0) {
