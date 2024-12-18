@@ -80,29 +80,8 @@ export function Sidebar({
       }
     };
 
-    const checkCustomerInfor = async () => {
-      try {
-        const response = await fetch('/api/subscriptions/current-status');
-        const data = await response.json();
-        if (!data.stripe_customer_id) {
-          setShowPlanModal(true);
-          setIsCustomer(false);
-        } else {
-          setShowPlanModal(false);
-        }
-        
-      
-      } catch (error) {
-        console.error('Error fetching token info:', error);
-        setTokenBalance('Error loading');
-        setPlanInfo('Error loading');
-      }
-    };
-    
-    
     if (user) {
       fetchTokenInfo();
-      checkCustomerInfor();
     }
   }, [user]);
   const [changedTitle, setChangedTitle] = useState("");

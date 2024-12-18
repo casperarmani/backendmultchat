@@ -128,8 +128,16 @@ async def get_current_subscription(
         user_id = uuid.UUID(current_user['id'])
         subscription = await database.get_user_subscription(user_id)
         
-        if not subscription:
-            return {"tier": "Free", "status": "active"}
+        # Always return Free tier if no subscription exists
+        if not subscription or not subscription.get('stripe_customer_id'):
+            return {
+                "tier": "Free",
+                "status": "active",
+                "subscription_tiers": {
+                    "tier_name": "Free",
+                    "tokens": 100
+                }
+            }
 
         return subscription
     except Exception as e:
