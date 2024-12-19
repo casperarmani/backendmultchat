@@ -109,14 +109,9 @@ function App() {
     setCurrentChatId(chatId);
   };
 
-  const handleMessageSent = (messages: Message[], chatId: string) => {
-    setChats(prevChats => 
-      prevChats.map(chat => 
-        chat.id === chatId 
-          ? { ...chat, messages, title: messages[0]?.content.slice(0, 30) || chat.title }
-          : chat
-      )
-    );
+  const handleMessageSent = async (messages: Message[], chatId: string) => {
+    await handleConversations(); // Refresh all conversations
+    setCurrentChatId(chatId); // Ensure we're on the new chat
     fetchHistories();
   };
 

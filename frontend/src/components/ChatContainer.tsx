@@ -198,7 +198,10 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
           if (newChatData.success && newChatData.conversation) {
               chatIdToUse = newChatData.conversation.id;
               if (onMessageSent) {
-                  onMessageSent([{ type: 'user', content: messageContent }], chatIdToUse);
+                  // Update UI immediately with the new chat and message
+                  const newMessage = { type: 'user' as MessageType, content: messageContent };
+                  setChatMessages([newMessage]);
+                  onMessageSent([newMessage], chatIdToUse);
               }
           } else {
             throw new Error("Failed to create new chat");
