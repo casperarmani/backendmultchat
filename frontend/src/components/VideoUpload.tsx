@@ -49,7 +49,30 @@ function VideoUpload({ onUploadComplete }: VideoUploadProps) {
 
       const data = await response.json();
       setFiles([]);
-      if (onUploadComplete) onUploadComplete();
+      
+      // Start polling for completion
+      let attempts = 0;
+      const maxAttempts = 60; // 5 minutes maximum waiting time
+      const checkInterval = setInterval(async () => {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          clearInterval(checkInterval);
+          return;
+        }
+        
+        const historyResponse = await fetch('/video_analysis_history');
+        if (historyResponse.ok) {
+          const historyData = await historyResponse.json();
+          const latestAnalysis = historyData.history?.[0];
+          if (latestAnalysis?.upload_file_name === files[0].name) {
+            clearInterval(checkInterval);
+            if (onUploadComplete) onUploadComplete();
+          }
+        }
+      }, 5000);
+
+      // Clear interval if component unmounts
+      return () => clearInterval(checkInterval);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload videos');

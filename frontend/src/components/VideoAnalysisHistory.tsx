@@ -25,7 +25,14 @@ const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData
       }
     };
 
+    // Initial fetch
     fetchVideoHistory();
+
+    // Set up polling every 5 seconds
+    const pollInterval = setInterval(fetchVideoHistory, 5000);
+
+    // Cleanup on unmount
+    return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {
