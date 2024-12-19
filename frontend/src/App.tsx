@@ -151,7 +151,7 @@ function App() {
                     />
                   </div>
                   <div className="w-[400px] flex-shrink-0">
-                    <VideoAnalysisHistory />
+                    <VideoAnalysisHistory historyData={videoHistory}/>
                   </div>
                 </div>
               </div>

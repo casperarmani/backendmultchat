@@ -2,14 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
+import { VideoHistory } from '@/types';
 
-interface VideoHistory {
-  TIMESTAMP: string;
-  upload_file_name: string;
-  analysis: string;
-}
+type VideoAnalysisHistoryProps = {
+  historyData: VideoHistory[];
+};
 
-function VideoAnalysisHistory() {
+const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData }) => {
   const [videoHistory, setVideoHistory] = useState<VideoHistory[]>([]);
 
   useEffect(() => {
@@ -28,6 +27,35 @@ function VideoAnalysisHistory() {
 
     fetchVideoHistory();
   }, []);
+
+  useEffect(() => {
+    const fetchVideoAnalysisHistory = async () => {
+        try {
+            let retries = 20;
+            while (retries > 0) {
+                const result = await fetch('/video_analysis_history');
+                if (!result.ok) {
+                    throw new Error('Failed to fetch video history');
+                }
+                const data = await result.json();
+                if (JSON.stringify(data.history) !== JSON.stringify(videoHistory)) {
+                    setVideoHistory(data.history || []);
+                    return;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                retries--;
+            }
+            throw new Error("Video analysis not found after retries.");
+        } catch (error) {
+            console.error('Error fetching video analysis history:', error);
+        }
+    };
+    if(historyData.length){
+      fetchVideoAnalysisHistory();
+    }
+}, [historyData]);
+  
 
   return (
     <Card className="h-[96vh] w-[400px] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
