@@ -24,6 +24,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   const [message, setMessage] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showWelcome, setShowWelcome] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -171,6 +172,9 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     e.preventDefault();
     if ((!message.trim() && files.length === 0) || isLoading) return;
 
+    if (chatMessages.length === 0) {
+      setShowWelcome(false);
+    }
     setShouldAutoScroll(true);
     setIsLoading(true);
     setError(null);
@@ -299,7 +303,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   return (
     <div className="flex flex-col h-[96vh] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
       <ChatHeader />
-      {chatMessages.length === 0 && <ChatWelcome />}
+      {chatMessages.length === 0 && <ChatWelcome isVisible={showWelcome} />}
       
       <ScrollArea className="flex-grow px-6" ref={scrollAreaRef}>
         <div className="space-y-6">
