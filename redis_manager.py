@@ -453,6 +453,15 @@ class RedisManager:
 
     def _get_result_key(self, task_id: str) -> str:
         return f"{self.result_prefix}{task_id}"
+        
+    def invalidate_analysis_cache(self, user_id: str) -> bool:
+        """Invalidate video analysis cache for a specific user"""
+        try:
+            cache_key = f"{self.cache_prefix}video_history:{user_id}"
+            return bool(self._retry_operation(self.redis.delete, cache_key))
+        except Exception as e:
+            logger.error(f"Error invalidating analysis cache: {str(e)}")
+            return False
 
     def enqueue_task(self, task_type: TaskType, payload: Dict[str, Any], priority: TaskPriority = TaskPriority.MEDIUM) -> Optional[str]:
         try:

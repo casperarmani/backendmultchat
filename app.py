@@ -721,6 +721,8 @@ async def send_message(
                         priority=TaskPriority.MEDIUM
                     )
                     
+                    # Invalidate cache before storing analysis
+                    redis_manager.invalidate_analysis_cache(user["id"])
                     # Store analysis in background
                     asyncio.create_task(insert_video_analysis(
                         user_id=uuid.UUID(user['id']),
