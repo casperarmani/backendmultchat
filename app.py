@@ -90,7 +90,9 @@ class EndpointFilter(logging.Filter):
             ("GET /conversations/" in message and "/messages" in message) or
             ("HTTP Request: GET" in message and 
              "user_chat_history" in message and 
-             "order=TIMESTAMP.desc" in message)
+             "order=TIMESTAMP.desc" in message) or
+            ("GET /video_analysis_history" in message) or
+            ("HTTP Request: GET" in message and "video_analysis_output" in message)
         )
 
 # Apply custom formatting to logger
