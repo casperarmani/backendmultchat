@@ -74,7 +74,7 @@ function TokenContainer() {
       setCachedTokenInfo(data);
       setLastFetchTime(Date.now());
 
-      setTokenBalance(`${data.token_balance} seconds`);
+      setTokenBalance(`${data.token_balance} Seconds`);
       setPlanInfo(
         data.subscription?.subscription_tiers
           ? `${data.subscription.subscription_tiers.tier_name} (${data.subscription.subscription_tiers.tokens} tokens/month)`
