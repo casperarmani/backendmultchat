@@ -14,6 +14,8 @@ function App() {
   const [conversations, setConversations] = React.useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = React.useState<string | null>(null);
   const [isMessageSent, setIsMessageSent] = React.useState(false);
+  const [isVideoSent, setIsVideoSent] = React.useState(false);
+
 
   const fetchHistories = async () => {
     try {
@@ -111,6 +113,7 @@ function App() {
 
   const handleMessageSent = async (messages: Message[], chatId: string) => {
     setIsMessageSent(true);
+    setIsVideoSent(true);
     await handleConversations(); // Refresh all conversations
     setCurrentChatId(chatId); // Ensure we're on the new chat
     fetchHistories();
@@ -154,7 +157,7 @@ function App() {
                     />
                   </div>
                   <div className="w-[400px] flex-shrink-0">
-                    <VideoAnalysisHistory historyData={videoHistory}/>
+                    <VideoAnalysisHistory historyData={videoHistory} isVideoSent={isVideoSent} setIsVideoSent={setIsVideoSent}/>
                   </div>
                 </div>
               </div>

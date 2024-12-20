@@ -6,11 +6,12 @@ import { VideoHistory } from '@/types';
 
 type VideoAnalysisHistoryProps = {
   historyData: VideoHistory[];
+  isVideoSent: boolean;
+  setIsVideoSent: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData }) => {
+const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData, isVideoSent, setIsVideoSent }) => {
   const [videoHistory, setVideoHistory] = useState<VideoHistory[]>([]);
-
   useEffect(() => {
     const fetchVideoHistory = async () => {
       try {
@@ -29,39 +30,74 @@ const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData
     fetchVideoHistory();
 
     // Set up polling every 5 seconds
-    const pollInterval = setInterval(fetchVideoHistory, 5000);
+    // const pollInterval = setInterval(fetchVideoHistory, 5000);
 
     // Cleanup on unmount
-    return () => clearInterval(pollInterval);
+    // return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {
-    const fetchVideoAnalysisHistory = async () => {
-        try {
-            let retries = 20;
-            while (retries > 0) {
-                const result = await fetch('/video_analysis_history');
-                if (!result.ok) {
-                    throw new Error('Failed to fetch video history');
-                }
-                const data = await result.json();
-                if (JSON.stringify(data.history) !== JSON.stringify(videoHistory)) {
-                    setVideoHistory(data.history || []);
-                    return;
-                }
-
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                retries--;
-            }
-            throw new Error("Video analysis not found after retries.");
-        } catch (error) {
-            console.error('Error fetching video analysis history:', error);
+    const fetchVideoHistory = async () => {
+      try {
+        const response = await fetch('/video_analysis_history');
+        if (!response.ok) {
+          throw new Error('Failed to fetch video history');
         }
+        const data = await response.json();
+
+        if (JSON.stringify(videoHistory) !== JSON.stringify(data.history)) {
+          setVideoHistory(data.history || []);
+          setIsVideoSent(false);
+          return; // Stop further execution
+        }
+
+      } catch (error) {
+        console.error('Error fetching video history:', error);
+      }
     };
-    if(historyData.length){
-      fetchVideoAnalysisHistory();
+
+    // Initial fetch
+    let pollInterval:any;
+    
+    if(isVideoSent){
+      fetchVideoHistory();
+      pollInterval = setInterval(fetchVideoHistory, 5000);
     }
-}, [historyData]);
+
+    // Set up polling every 5 seconds
+
+    // Cleanup on unmount
+    return () => clearInterval(pollInterval);
+
+  }, [isVideoSent]);
+
+//   useEffect(() => {
+//     const fetchVideoAnalysisHistory = async () => {
+//         try {
+//             let retries = 20;
+//             while (retries > 0) {
+//                 const result = await fetch('/video_analysis_history');
+//                 if (!result.ok) {
+//                     throw new Error('Failed to fetch video history');
+//                 }
+//                 const data = await result.json();
+//                 if (JSON.stringify(data.history) !== JSON.stringify(videoHistory)) {
+//                     setVideoHistory(data.history || []);
+//                     return;
+//                 }
+
+//                 await new Promise(resolve => setTimeout(resolve, 3000));
+//                 retries--;
+//             }
+//             throw new Error("Video analysis not found after retries.");
+//         } catch (error) {
+//             console.error('Error fetching video analysis history:', error);
+//         }
+//     };
+//     if(historyData.length){
+//       fetchVideoAnalysisHistory();
+//     }
+// }, [historyData]);
   
 
   return (
