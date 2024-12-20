@@ -35,7 +35,7 @@ import {
   Bot,
   Shield
 } from "lucide-react";
-import { Chat } from '@/types';
+import { Chat, VideoHistory } from '@/types';
 import { handleManageSubscription } from '@/components/ui/dropdown-menu'; // Added import
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -45,6 +45,8 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   onNewChat: () => void;
   onUpdatetitle:() => void;
   onSelectChat: (chatId: string) => void;
+  setIsMessageSent: React.Dispatch<React.SetStateAction<boolean>>;
+  isMessageSent: boolean;
 }
 
 export function Sidebar({ 
@@ -53,7 +55,9 @@ export function Sidebar({
   currentChatId, 
   onNewChat,
   onUpdatetitle, 
-  onSelectChat 
+  onSelectChat,
+  setIsMessageSent,
+  isMessageSent
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { logout, user } = useAuth();
@@ -77,13 +81,15 @@ export function Sidebar({
         console.error('Error fetching token info:', error);
         setTokenBalance('Error loading');
         setPlanInfo('Error loading');
+      } finally {
+        setIsMessageSent(false);
       }
     };
 
-    if (user) {
+    if (user || isMessageSent) {
       fetchTokenInfo();
     }
-  }, [user]);
+  }, [user, isMessageSent]);
   const [changedTitle, setChangedTitle] = useState("");
   const navigate = useNavigate();
 

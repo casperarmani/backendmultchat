@@ -12,8 +12,8 @@ function App() {
   const [error, setError] = React.useState<string | null>(null);
   const [chats, setChats] = React.useState<Chat[]>([]);
   const [conversations, setConversations] = React.useState<Chat[]>([]);
-
   const [currentChatId, setCurrentChatId] = React.useState<string | null>(null);
+  const [isMessageSent, setIsMessageSent] = React.useState(false);
 
   const fetchHistories = async () => {
     try {
@@ -110,6 +110,7 @@ function App() {
   };
 
   const handleMessageSent = async (messages: Message[], chatId: string) => {
+    setIsMessageSent(true);
     await handleConversations(); // Refresh all conversations
     setCurrentChatId(chatId); // Ensure we're on the new chat
     fetchHistories();
@@ -130,6 +131,8 @@ function App() {
         onNewChat={handleNewChat}
         onUpdatetitle={handleConversations}
         onSelectChat={handleSelectChat}
+        isMessageSent={isMessageSent}
+        setIsMessageSent={setIsMessageSent} // Pass the setter
       />
       <main className="flex-1 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/clear_tree.png')] bg-cover bg-center">
