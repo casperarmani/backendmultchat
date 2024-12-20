@@ -396,7 +396,7 @@ export function Sidebar({
               <span className={cn(
                 "ml-2 transition-all duration-300 ease-in-out overflow-hidden",
                 isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>{tokenBalance}</span>
+              )}>{tokenBalance?.replace('tokens', 'seconds')}</span>
             </Button>
             <Button variant="ghost" className={cn(
               "w-full justify-start transition-all duration-300 ease-in-out",
