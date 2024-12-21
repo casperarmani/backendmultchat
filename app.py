@@ -84,6 +84,9 @@ class ColoredFormatter(logging.Formatter):
 # Suppress logs for polling endpoints while keeping format for others
 class EndpointFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, 'getMessage'):
+            return True
+            
         message = record.getMessage()
         # Filter out polling endpoint logs, cache hits, and their corresponding Supabase requests
         return not (
@@ -94,8 +97,12 @@ class EndpointFilter(logging.Filter):
             ("GET /video_analysis_history" in message) or
             ("HTTP Request: GET" in message and "video_analysis_output" in message) or
             ("Returning cached" in message) or
-            ("Returning cached video history for user" in message) or
-            ("Returning cached chat history for user" in message)
+            any(cache_msg in message for cache_msg in [
+                "Returning cached video history for user",
+                "Returning cached chat history for user",
+                "Returning cached analysis for user",
+                "Returning cached data for user"
+            ])
         )
 
 # Apply custom formatting to logger
