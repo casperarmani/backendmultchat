@@ -382,8 +382,8 @@ export function Sidebar({
         <Separator className="my-2" />
         <div className="px-3 py-2">
           <h2 className={cn(
-            "mb-2 px-4 text-lg font-semibold tracking-tight transition-all duration-300 ease-in-out",
-            isCollapsed && "opacity-0 h-0 mb-0"
+            "mb-2 px-4 text-lg font-semibold tracking-tight transition-all duration-300 ease-in-out overflow-hidden",
+            isCollapsed ? "w-0 opacity-0 h-0 mb-0" : "w-auto opacity-100"
           )}>
             Plan
           </h2>
