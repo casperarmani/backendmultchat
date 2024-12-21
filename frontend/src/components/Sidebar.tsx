@@ -339,7 +339,12 @@ export function Sidebar({
                     <MessageSquare className="h-4 w-4 shrink-0" />
                     {!isCollapsed && (
                       editingId === chat.id ? (
-                        <input value={changedTitle} className="ml-2 w-[150px] bg-transparent" onChange={(e) => setChangedTitle(e.target.value)} />
+                        <input 
+                          value={changedTitle} 
+                          className="ml-2 w-[150px] bg-transparent" 
+                          onChange={(e) => setChangedTitle(e.target.value)}
+                          autoFocus
+                        />
                       ) : (
                         <span className="ml-2 truncate max-w-[150px]">{chat.title}</span>
                       )
