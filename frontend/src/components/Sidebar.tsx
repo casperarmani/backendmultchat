@@ -341,7 +341,7 @@ export function Sidebar({
                       editingId === chat.id ? (
                         <input 
                           value={changedTitle} 
-                          className="ml-2 w-[150px] bg-transparent" 
+                          className="ml-2 w-[150px] bg-transparent focus:outline-none focus:ring-1 focus:ring-primary" 
                           onChange={(e) => setChangedTitle(e.target.value)}
                           autoFocus
                         />
