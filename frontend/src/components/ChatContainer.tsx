@@ -411,17 +411,15 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
               </div>
             )}
             {files.map((file, index) => {
-              const [duration, setDuration] = useState<number>(0);
-              
-              useEffect(() => {
-                const videoElement = document.createElement('video');
-                videoElement.preload = 'metadata';
-                videoElement.src = URL.createObjectURL(file);
+              const videoElement = document.createElement('video');
+              videoElement.preload = 'metadata';
+              videoElement.src = URL.createObjectURL(file);
+              const duration = await new Promise<number>((resolve) => {
                 videoElement.onloadedmetadata = () => {
                   URL.revokeObjectURL(videoElement.src);
-                  setDuration(Math.ceil(videoElement.duration));
+                  resolve(Math.ceil(videoElement.duration));
                 };
-              }, [file]);
+              });
               
               return (
                 <div
