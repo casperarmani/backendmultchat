@@ -93,7 +93,9 @@ class EndpointFilter(logging.Filter):
              "order=TIMESTAMP.desc" in message) or
             ("GET /video_analysis_history" in message) or
             ("HTTP Request: GET" in message and "video_analysis_output" in message) or
-            ("Returning cached" in message)
+            ("Returning cached" in message) or
+            ("Returning cached video history for user" in message) or
+            ("Returning cached chat history for user" in message)
         )
 
 # Apply custom formatting to logger
