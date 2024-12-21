@@ -301,8 +301,16 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     if (droppedFiles.length > 0) {
       let totalTokens = 0;
       for (const file of droppedFiles) {
-        const tokens = await calculateVideoTokens(file);
-        totalTokens += tokens;
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = URL.createObjectURL(file);
+        const duration = await new Promise<number>((resolve) => {
+          video.onloadedmetadata = () => {
+            URL.revokeObjectURL(video.src);
+            resolve(Math.ceil(video.duration));
+          };
+        });
+        totalTokens += duration;
       }
       setTokenCost(totalTokens);
       setFiles(prevFiles => [...prevFiles, ...droppedFiles]);
@@ -322,9 +330,25 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     setTokenCost(totalTokens);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
+      let totalTokens = 0;
+      
+      for (const file of selectedFiles) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = URL.createObjectURL(file);
+        const duration = await new Promise<number>((resolve) => {
+          video.onloadedmetadata = () => {
+            URL.revokeObjectURL(video.src);
+            resolve(Math.ceil(video.duration));
+          };
+        });
+        totalTokens += duration;
+      }
+      
+      setTokenCost(prevTokens => prevTokens + totalTokens);
       setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
     }
   };
@@ -386,25 +410,37 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
                 Estimated token cost: {tokenCost} tokens (1 token per second)
               </div>
             )}
-            {files.map((file, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-white/5 rounded-lg p-2"
-              >
-                <div className="flex items-center text-white/80">
-                  <span className="text-sm truncate">{file.name}</span>
-                  <span className="text-xs text-white/40 ml-2">
-                    ({(file.size / (1024 * 1024)).toFixed(2)} MB) • {tokenCost} tokens
-                  </span>
-                </div>
-                <button
-                  onClick={() => removeFile(index)}
-                  className="text-white/40 hover:text-white/80 transition-colors"
+            {files.map((file, index) => {
+              const videoElement = document.createElement('video');
+              videoElement.preload = 'metadata';
+              videoElement.src = URL.createObjectURL(file);
+              const duration = await new Promise<number>((resolve) => {
+                videoElement.onloadedmetadata = () => {
+                  URL.revokeObjectURL(videoElement.src);
+                  resolve(Math.ceil(videoElement.duration));
+                };
+              });
+              
+              return (
+                <div
+                  key={index}
+                  className="flex items-center justify-between bg-white/5 rounded-lg p-2"
                 >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center text-white/80">
+                    <span className="text-sm truncate">{file.name}</span>
+                    <span className="text-xs text-white/40 ml-2">
+                      ({(file.size / (1024 * 1024)).toFixed(2)} MB) • {duration} tokens
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="text-white/40 hover:text-white/80 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
