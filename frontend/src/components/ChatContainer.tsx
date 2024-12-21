@@ -394,7 +394,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
                 <div className="flex items-center text-white/80">
                   <span className="text-sm truncate">{file.name}</span>
                   <span className="text-xs text-white/40 ml-2">
-                    ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                    ({(file.size / (1024 * 1024)).toFixed(2)} MB) • {tokenCost} tokens
                   </span>
                 </div>
                 <button
