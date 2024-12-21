@@ -341,7 +341,7 @@ export function Sidebar({
                       editingId === chat.id ? (
                         <input 
                           value={changedTitle} 
-                          className="ml-2 w-[130px] bg-transparent focus:outline-none focus:ring-1 focus:ring-primary px-2" 
+                          className="ml-2 w-[130px] bg-transparent focus:outline-none focus:ring-1 focus:ring-primary px-2 rounded-md" 
                           onChange={(e) => setChangedTitle(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
