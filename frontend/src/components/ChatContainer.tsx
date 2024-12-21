@@ -275,7 +275,21 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     e.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const [tokenCost, setTokenCost] = useState<number>(0);
+
+  const calculateVideoTokens = async (file: File): Promise<number> => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(Math.ceil(video.duration));
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
@@ -285,6 +299,12 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     );
 
     if (droppedFiles.length > 0) {
+      let totalTokens = 0;
+      for (const file of droppedFiles) {
+        const tokens = await calculateVideoTokens(file);
+        totalTokens += tokens;
+      }
+      setTokenCost(totalTokens);
       setFiles(prevFiles => [...prevFiles, ...droppedFiles]);
     }
   };
@@ -352,6 +372,11 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
         {files.length > 0 && (
           <div className="mt-3 space-y-2 max-h-32 overflow-auto">
+            {tokenCost > 0 && (
+              <div className="text-sm text-white/60 mb-2 bg-white/5 p-2 rounded-lg">
+                Estimated token cost: {tokenCost} tokens (1 token per second)
+              </div>
+            )}
             {files.map((file, index) => (
               <div
                 key={index}
