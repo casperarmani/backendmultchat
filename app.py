@@ -85,14 +85,15 @@ class ColoredFormatter(logging.Formatter):
 class EndpointFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         message = record.getMessage()
-        # Filter out polling endpoint logs and their corresponding Supabase requests
+        # Filter out polling endpoint logs, cache hits, and their corresponding Supabase requests
         return not (
             ("GET /conversations/" in message and "/messages" in message) or
             ("HTTP Request: GET" in message and 
              "user_chat_history" in message and 
              "order=TIMESTAMP.desc" in message) or
             ("GET /video_analysis_history" in message) or
-            ("HTTP Request: GET" in message and "video_analysis_output" in message)
+            ("HTTP Request: GET" in message and "video_analysis_output" in message) or
+            ("Returning cached" in message)
         )
 
 # Apply custom formatting to logger
