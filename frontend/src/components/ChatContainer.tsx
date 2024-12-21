@@ -4,7 +4,8 @@ import { ChatHeader } from './chat/ChatHeader';
 import { ChatWelcome } from './chat/ChatWelcome';
 import { ChatMessage } from './chat/ChatMessage';
 import { ChatInput } from './chat/ChatInput';
-import { Upload, X } from 'lucide-react';
+import { Upload } from 'lucide-react';
+import { FilePreview } from './chat/FilePreview';
 
 type MessageType = 'user' | 'bot' | 'error';
 
@@ -410,40 +411,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
                 Estimated token cost: {tokenCost} tokens (1 token per second)
               </div>
             )}
-            {files.map((file, index) => {
-              const [duration, setDuration] = useState(0);
-              
-              useEffect(() => {
-                const videoElement = document.createElement('video');
-                videoElement.preload = 'metadata';
-                videoElement.src = URL.createObjectURL(file);
-                videoElement.onloadedmetadata = () => {
-                  const calculatedDuration = Math.ceil(videoElement.duration);
-                  URL.revokeObjectURL(videoElement.src);
-                  setDuration(calculatedDuration);
-                };
-              }, [file]);
-              
-              return (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-white/5 rounded-lg p-2"
-                >
-                  <div className="flex items-center text-white/80">
-                    <span className="text-sm truncate">{file.name}</span>
-                    <span className="text-xs text-white/40 ml-2">
-                      ({(file.size / (1024 * 1024)).toFixed(2)} MB) • {duration} tokens
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removeFile(index)}
-                    className="text-white/40 hover:text-white/80 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              );
-            })}
+            {files.map((file, index) => (
+              <FilePreview
+                key={index}
+                file={file}
+                onRemove={() => removeFile(index)}
+              />
+            ))}
           </div>
         )}
       </div>
