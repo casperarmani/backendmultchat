@@ -106,12 +106,14 @@ handler = logging.StreamHandler()
 handler.setFormatter(ColoredFormatter())
 logging.getLogger().handlers = [handler]
 
-# Apply filter to both access logs and httpx logs
+# Apply filter to access logs, httpx logs and app logger
 endpoint_filter = EndpointFilter()
 uvicorn_access = logging.getLogger("uvicorn.access")
 uvicorn_access.addFilter(endpoint_filter)
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.addFilter(endpoint_filter)
+app_logger = logging.getLogger(__name__)
+app_logger.addFilter(endpoint_filter)
 
 load_dotenv()
 
