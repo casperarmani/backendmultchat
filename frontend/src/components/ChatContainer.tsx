@@ -309,8 +309,17 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     }
   };
 
-  const removeFile = (index: number) => {
-    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+  const removeFile = async (index: number) => {
+    const updatedFiles = files.filter((_, i) => i !== index);
+    setFiles(updatedFiles);
+    
+    // Recalculate tokens for remaining files
+    let totalTokens = 0;
+    for (const file of updatedFiles) {
+      const tokens = await calculateVideoTokens(file);
+      totalTokens += tokens;
+    }
+    setTokenCost(totalTokens);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
