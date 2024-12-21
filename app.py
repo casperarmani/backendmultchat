@@ -88,21 +88,17 @@ class EndpointFilter(logging.Filter):
             return True
             
         message = record.getMessage()
-        # Filter out polling endpoint logs, cache hits, and their corresponding Supabase requests
+        # Short-circuit if message contains "Returning cached"
+        if "Returning cached" in message:
+            return False
+            
         return not (
             ("GET /conversations/" in message and "/messages" in message) or
             ("HTTP Request: GET" in message and 
              "user_chat_history" in message and 
              "order=TIMESTAMP.desc" in message) or
             ("GET /video_analysis_history" in message) or
-            ("HTTP Request: GET" in message and "video_analysis_output" in message) or
-            ("Returning cached" in message) or
-            any(cache_msg in message for cache_msg in [
-                "Returning cached video history for user",
-                "Returning cached chat history for user",
-                "Returning cached analysis for user",
-                "Returning cached data for user"
-            ])
+            ("HTTP Request: GET" in message and "video_analysis_output" in message)
         )
 
 # Apply custom formatting to logger
