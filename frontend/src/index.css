@@ -4,6 +4,9 @@
 
 .prose-invert {
   @apply prose-headings:text-white/90 
+    prose-h1:text-lg
+    prose-h2:text-base
+    prose-h3:text-sm
     prose-p:text-white/90 
     prose-strong:text-white/90 
     prose-em:text-white/90
