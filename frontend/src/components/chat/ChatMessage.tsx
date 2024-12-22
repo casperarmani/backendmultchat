@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Message } from '@/types';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessageProps {
   message: Message;
@@ -22,7 +24,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
             ? 'bg-red-500/10 backdrop-blur-lg'
             : 'bg-black/20 backdrop-blur-lg'
         }`}>
-          <p className="text-white/90 text-sm leading-relaxed">{message.content}</p>
+          <div className="text-white/90 text-sm leading-relaxed prose prose-invert">
+            {message.type === 'user' ? (
+              <p>{message.content}</p>
+            ) : (
+              <ReactMarkdown>{message.content}</ReactMarkdown>
+            )}
+          </div>
         </div>
       </div>
     </div>
