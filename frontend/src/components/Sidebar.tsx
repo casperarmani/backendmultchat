@@ -69,7 +69,12 @@ export function Sidebar({
   useEffect(() => {
     const fetchTokenInfo = async () => {
       try {
-        const response = await fetch('/user/tokens');
+        const response = await fetch('/user/tokens', {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
         const data = await response.json();
         setTokenBalance(`${data.token_balance} tokens`);
         setPlanInfo(
@@ -89,6 +94,10 @@ export function Sidebar({
     if (user || isMessageSent) {
       fetchTokenInfo();
     }
+
+    // Set up polling interval
+    const intervalId = setInterval(fetchTokenInfo, 5000);
+    return () => clearInterval(intervalId);
   }, [user, isMessageSent]);
   const [changedTitle, setChangedTitle] = useState("");
   const navigate = useNavigate();

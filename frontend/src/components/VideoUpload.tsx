@@ -66,6 +66,13 @@ function VideoUpload({ onUploadComplete }: VideoUploadProps) {
           const latestAnalysis = historyData.history?.[0];
           if (latestAnalysis?.upload_file_name === files[0].name) {
             clearInterval(checkInterval);
+            // Force token refresh
+            await fetch('/user/tokens', {
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
+            });
             if (onUploadComplete) onUploadComplete();
           }
         }
