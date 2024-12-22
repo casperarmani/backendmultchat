@@ -190,15 +190,17 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     setShouldAutoScroll(true);
     setError(null);
     
-    // Start progress animation
-    setUploadProgress(0);
-    if (progressRef.current) clearInterval(progressRef.current);
-    progressRef.current = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 98) return 98;
-        return prev + (98 - prev) * 0.05;
-      });
-    }, 100);
+    // Start progress animation only if there are video files
+    if (files.length > 0) {
+      setUploadProgress(0);
+      if (progressRef.current) clearInterval(progressRef.current);
+      progressRef.current = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 98) return 98;
+          return prev + (98 - prev) * 0.05;
+        });
+      }, 100);
+    }
 
     const userMessage = { type: 'user' as MessageType, content: message };
     setChatMessages(prev => [...prev, userMessage]);
