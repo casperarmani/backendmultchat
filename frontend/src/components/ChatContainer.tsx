@@ -196,9 +196,9 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     progressRef.current = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 98) return 98;
-        return prev + (98 - prev) * 0.1;
+        return prev + (98 - prev) * 0.05;
       });
-    }, 500);
+    }, 100);
 
     const userMessage = { type: 'user' as MessageType, content: message };
     setChatMessages(prev => [...prev, userMessage]);
@@ -380,7 +380,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         <div className="px-6 py-2">
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-white/80 rounded-full transition-all duration-300 ease-out"
+              className="h-full bg-white/80 rounded-full transition-all duration-500 ease-in-out"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
