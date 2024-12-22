@@ -50,33 +50,39 @@ function VideoUpload({ onUploadComplete }: VideoUploadProps) {
       const data = await response.json();
       setFiles([]);
       
-      // Start polling for completion
-      let attempts = 0;
-      const maxAttempts = 60; // 5 minutes maximum waiting time
+      // Start polling for completion - 5 minutes total polling time
+      const POLLING_INTERVAL = 5000; // 5 seconds
+      const TOTAL_POLLING_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+      const startTime = Date.now();
+      
       const checkInterval = setInterval(async () => {
-        attempts++;
-        if (attempts >= maxAttempts) {
+        // Check if 5 minutes have elapsed
+        if (Date.now() - startTime >= TOTAL_POLLING_TIME) {
           clearInterval(checkInterval);
           return;
         }
         
-        const historyResponse = await fetch('/video_analysis_history');
-        if (historyResponse.ok) {
-          const historyData = await historyResponse.json();
-          const latestAnalysis = historyData.history?.[0];
-          if (latestAnalysis?.upload_file_name === files[0].name) {
-            clearInterval(checkInterval);
-            // Force token refresh
-            await fetch('/user/tokens', {
-              headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-              }
-            });
-            if (onUploadComplete) onUploadComplete();
+        try {
+          const historyResponse = await fetch('/video_analysis_history');
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json();
+            const latestAnalysis = historyData.history?.[0];
+            if (latestAnalysis?.upload_file_name === files[0].name) {
+              clearInterval(checkInterval);
+              // Force token refresh
+              await fetch('/user/tokens', {
+                headers: {
+                  'Cache-Control': 'no-cache',
+                  'Pragma': 'no-cache'
+                }
+              });
+              if (onUploadComplete) onUploadComplete();
+            }
           }
+        } catch (error) {
+          console.error('Error polling for video analysis:', error);
         }
-      }, 5000);
+      }, POLLING_INTERVAL);
 
       // Clear interval if component unmounts
       return () => clearInterval(checkInterval);
