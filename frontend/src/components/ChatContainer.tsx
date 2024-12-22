@@ -65,10 +65,14 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   }, [handleScroll]);
 
   useEffect(() => {
-    if (chatMessages.length > 0 && shouldAutoScroll && isNearBottom) {
-      scrollToBottom();
+    if (chatMessages.length > 0) {
+      if (isLoading || chatMessages[chatMessages.length - 1].type === 'user') {
+        scrollToBottom();
+      } else if (isNearBottom) {
+        scrollToBottom();
+      }
     }
-  }, [chatMessages, scrollToBottom, shouldAutoScroll, isNearBottom]);
+  }, [chatMessages, isLoading, isNearBottom]);
 
   useEffect(() => {
     if (initialMessages.length > 0 && chatMessages.length === 0) {
