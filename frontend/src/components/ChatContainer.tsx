@@ -252,6 +252,23 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      // Update title if this is the first message
+      if (chatMessages.length === 0 && chatIdToUse) {
+        try {
+          await fetch(`/conversations/${chatIdToUse}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `title=${encodeURIComponent(messageContent.slice(0, 30))}${messageContent.length > 30 ? '...' : ''}`
+          });
+          // Add a function to update the sidebar title here (onUpdateTitle)
+          // This function is not defined in the original code and needs to be implemented separately.
+        } catch (error) {
+          console.error('Failed to update title:', error);
+        }
+      }
+
       // Clear message and files immediately after successful send
       setMessage('');
       setFiles([]);
