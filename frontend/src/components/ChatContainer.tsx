@@ -262,8 +262,9 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
             },
             body: `title=${encodeURIComponent(messageContent.slice(0, 30))}${messageContent.length > 30 ? '...' : ''}`
           });
-          // Add a function to update the sidebar title here (onUpdateTitle)
-          // This function is not defined in the original code and needs to be implemented separately.
+          if (onMessageSent) {
+            onMessageSent(chatMessages, chatIdToUse);
+          }
         } catch (error) {
           console.error('Failed to update title:', error);
         }
