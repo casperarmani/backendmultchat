@@ -190,7 +190,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     setShouldAutoScroll(true);
     setError(null);
     
-    // Start progress animation only if there are video files
+    // Start progress animation only for video uploads
     if (files.length > 0) {
       setUploadProgress(0);
       if (progressRef.current) clearInterval(progressRef.current);
