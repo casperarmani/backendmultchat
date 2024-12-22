@@ -30,6 +30,8 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   const [error, setError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const progressRef = useRef<NodeJS.Timeout | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const INITIAL_POLL_INTERVAL = 1000;
@@ -187,6 +189,16 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     setIsLoading(true);
     setShouldAutoScroll(true);
     setError(null);
+    
+    // Start progress animation
+    setUploadProgress(0);
+    if (progressRef.current) clearInterval(progressRef.current);
+    progressRef.current = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 98) return 98;
+        return prev + (98 - prev) * 0.1;
+      });
+    }, 500);
 
     const userMessage = { type: 'user' as MessageType, content: message };
     setChatMessages(prev => [...prev, userMessage]);
@@ -237,6 +249,11 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       // Clear message and files immediately after successful send
       setMessage('');
       setFiles([]);
+      if (progressRef.current) {
+        clearInterval(progressRef.current);
+        progressRef.current = null;
+      }
+      setUploadProgress(100);
 
       // Start polling for the bot's response
       startPolling();
@@ -359,6 +376,16 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         </div>
       </ScrollArea>
 
+      {uploadProgress > 0 && isLoading && (
+        <div className="px-6 py-2">
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white/80 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
       <ChatInput
         message={message}
         isLoading={isLoading}
