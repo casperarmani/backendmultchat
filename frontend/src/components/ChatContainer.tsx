@@ -378,7 +378,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         </div>
       </ScrollArea>
 
-      {uploadProgress > 0 && isLoading && (
+      {uploadProgress > 0 && isLoading && files.length > 0 && (
         <div className="px-6 py-2">
           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
             <div 
