@@ -84,7 +84,7 @@ function App() {
 
   const handleNewChat = async () => {
     const formData = new FormData();
-    formData.append('title', 'New Chat 1'); 
+    formData.append('title', 'New Chat'); 
 
     try {
         const newChat = await fetchNewChat(formData);
