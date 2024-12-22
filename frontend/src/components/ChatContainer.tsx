@@ -4,6 +4,7 @@ import { ChatHeader } from './chat/ChatHeader';
 import { ChatWelcome } from './chat/ChatWelcome';
 import { ChatMessage } from './chat/ChatMessage';
 import { ChatInput } from './chat/ChatInput';
+import { LoadingMessage } from './chat/LoadingMessage';
 import { Upload } from 'lucide-react';
 import { FilePreview } from './chat/FilePreview';
 
@@ -90,13 +91,10 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
     try {
       const response = await fetch(`/conversations/${chatId}/messages`);
-      
       if (!response.ok) {
-        const text = await response.text();
-        console.error('Response text:', text);
         throw new Error(`Failed to fetch chat history: ${response.status}`);
       }
-      
+
       const data = await response.json();
       if (data.messages && Array.isArray(data.messages)) {
         const formattedMessages: Message[] = data.messages.map((msg: any) => ({
@@ -104,13 +102,21 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
           content: msg.message,
           timestamp: msg.TIMESTAMP
         }));
-        const sortedMessages: Message[] = formattedMessages.sort((a, b) => {
+
+        // Sort messages by timestamp
+        const sortedMessages = formattedMessages.sort((a, b) => {
           const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
           const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
           return dateA - dateB;
         });
 
-        setChatMessages(sortedMessages);
+        // Update messages and clear loading state if we got a new bot message
+        const lastMessage = sortedMessages[sortedMessages.length - 1];
+        if (lastMessage && lastMessage.type === 'bot') {
+          setChatMessages(sortedMessages);
+          setIsLoading(false);
+          stopPolling();
+        }
       }
     } catch (error) {
       console.error('Error fetching new messages:', error);
@@ -140,13 +146,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (!response.ok) {
         const text = await response.text();
         console.error('Response text:', text);
         throw new Error(`Failed to fetch chat history: ${response.status}`);
       }
-      
+
       const data = await response.json();
       if (data.history && Array.isArray(data.history)) {
         const filteredMessage = data.history.filter((msg:any) => msg.conversation_id === chatId);
@@ -176,15 +182,21 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     if (chatMessages.length === 0) {
       setShowWelcome(false);
     }
-    setShouldAutoScroll(true);
+
+    // Set loading state and add user message immediately
     setIsLoading(true);
+    setShouldAutoScroll(true);
     setError(null);
+
+    const userMessage = { type: 'user' as MessageType, content: message };
+    setChatMessages(prev => [...prev, userMessage]);
+    scrollToBottom();
 
     try {
       const formData = new FormData();
       const messageContent = message.trim();
       formData.append('message', messageContent);
-      
+
       files.forEach((file) => {
         formData.append('videos', file);
       });
@@ -192,41 +204,25 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       // If no chat exists, create one first
       let chatIdToUse = chatId;
       if (!chatIdToUse) {
-          const newChatFormData = new FormData();
-          newChatFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
-          const newChatResponse = await fetch('/conversations', {
-              method: 'POST',
-              body: newChatFormData,
-              credentials: 'include'
-          });
-          const newChatData = await newChatResponse.json();
-          if (newChatData.success && newChatData.conversation) {
-              chatIdToUse = newChatData.conversation.id;
-              if (onMessageSent) {
-                  // Update UI immediately with the new chat and message
-                  const newMessage = { type: 'user' as MessageType, content: messageContent };
-                  setChatMessages([newMessage]);
-                  onMessageSent([newMessage], chatIdToUse);
-              }
-          } else {
-            throw new Error("Failed to create new chat");
-          }
-      }
-      formData.append('conversation_id', chatIdToUse!);
-
-      if (chatMessages.length === 0 && chatIdToUse) {
-        const titleFormData = new FormData();
-        titleFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
-        await fetch(`/conversations/${chatIdToUse}`, {
-          method: 'PUT',
-          body: titleFormData,
+        const newChatFormData = new FormData();
+        newChatFormData.append('title', messageContent.slice(0, 30) + (messageContent.length > 30 ? '...' : ''));
+        const newChatResponse = await fetch('/conversations', {
+          method: 'POST',
+          body: newChatFormData,
           credentials: 'include'
         });
-        if (onMessageSent) {
-          onMessageSent([], chatIdToUse);
+        const newChatData = await newChatResponse.json();
+        if (newChatData.success && newChatData.conversation) {
+          chatIdToUse = newChatData.conversation.id;
+          if (onMessageSent) {
+            onMessageSent([userMessage], chatIdToUse);
+          }
+        } else {
+          throw new Error("Failed to create new chat");
         }
       }
 
+      formData.append('conversation_id', chatIdToUse);
 
       const response = await fetch('/send_message', {
         method: 'POST',
@@ -235,24 +231,19 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      
-      if (chatIdToUse && onMessageSent) {
-        onMessageSent(chatMessages, chatIdToUse);
-      }
-      
+      // Clear message and files immediately after successful send
       setMessage('');
       setFiles([]);
-      scrollToBottom();
+
+      // Start polling for the bot's response
+      startPolling();
     } catch (err) {
       console.error('Error:', err);
-      setError('Failed to send message. Please try again.');
-    } finally {
+      const errorMessage = { type: 'error' as MessageType, content: 'Failed to send message. Please try again.' };
+      setChatMessages(prev => [...prev, errorMessage]);
       setIsLoading(false);
     }
   };
@@ -321,7 +312,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   const removeFile = async (index: number) => {
     const updatedFiles = files.filter((_, i) => i !== index);
     setFiles(updatedFiles);
-    
+
     // Recalculate tokens for remaining files
     let totalTokens = 0;
     for (const file of updatedFiles) {
@@ -335,7 +326,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       let totalTokens = 0;
-      
+
       for (const file of selectedFiles) {
         const video = document.createElement('video');
         video.preload = 'metadata';
@@ -348,7 +339,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         });
         totalTokens += duration;
       }
-      
+
       setTokenCost(prevTokens => prevTokens + totalTokens);
       setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
     }
@@ -358,12 +349,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     <div className="flex flex-col h-[96vh] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
       <ChatHeader />
       {chatMessages.length === 0 && <ChatWelcome isVisible={showWelcome} />}
-      
+
       <ScrollArea className="flex-grow px-6" ref={scrollAreaRef}>
         <div className="space-y-6">
           {chatMessages.map((msg, index) => (
             <ChatMessage key={index} message={msg} />
           ))}
+          {isLoading && <LoadingMessage />}
         </div>
       </ScrollArea>
 
