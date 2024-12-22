@@ -117,11 +117,8 @@ function TokenContainer() {
     setTokenBalance('Loading...');
     setPlanInfo('Loading...');
 
-    // await new Promise((resolve) => setTimeout(resolve, 2000)); // Initial delay
-    await fetchTokenInfo(true); // Initial fetch
-
-    // const intervalId = setInterval(() => fetchTokenInfo(), 60000);
-    // return () => clearInterval(intervalId);
+    // Initial fetch without polling
+    await fetchTokenInfo(true);
   };
 
   // Stop token updates
