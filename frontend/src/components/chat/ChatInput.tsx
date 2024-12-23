@@ -33,7 +33,7 @@ export function ChatInput({
           title={!message.trim() ? "Please include a message" : ""}
         >
           {!message.trim() && (
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm bg-black/70 backdrop-blur-xl rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-white/90 shadow-lg z-[9999]">
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm bg-black/70 backdrop-blur-xl rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-white/90 shadow-lg z-[99999]">
               Please include a message
             </div>
           )}
