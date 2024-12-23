@@ -28,8 +28,8 @@ export function ChatInput({
         />
         <button 
           type="submit" 
-          className="text-white/40 hover:text-white/80 transition-colors p-1"
-          disabled={isLoading}
+          className={`text-white/40 transition-colors p-1 ${!message.trim() ? 'cursor-not-allowed opacity-50' : 'hover:text-white/80'}`}
+          disabled={isLoading || !message.trim()}
         >
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
