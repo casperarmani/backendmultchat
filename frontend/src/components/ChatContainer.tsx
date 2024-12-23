@@ -309,6 +309,20 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   };
 
   const [tokenCost, setTokenCost] = useState<number>(0);
+  const [currentTokens, setCurrentTokens] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchTokenBalance = async () => {
+      try {
+        const response = await fetch('/user/tokens');
+        const data = await response.json();
+        setCurrentTokens(data.token_balance);
+      } catch (error) {
+        console.error('Error fetching token balance:', error);
+      }
+    };
+    fetchTokenBalance();
+  }, []);
 
   const calculateVideoTokens = async (file: File): Promise<number> => {
     return new Promise((resolve) => {
