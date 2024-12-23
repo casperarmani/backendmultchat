@@ -74,7 +74,7 @@ const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData
           {videoHistory.length > 0 ? (
             <div className="space-y-4">
               {videoHistory.map((analysis, index) => (
-                <div key={index} className="rounded-lg bg-black/20 backdrop-blur-lg p-4">
+                <div key={index} className="rounded-2xl bg-black/20 backdrop-blur-lg p-4">
                   <div className="text-xs text-white/60">
                     {new Date(analysis.TIMESTAMP).toLocaleString()}
                   </div>
