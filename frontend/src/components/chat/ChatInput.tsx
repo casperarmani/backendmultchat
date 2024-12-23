@@ -22,7 +22,7 @@ export function ChatInput({
           type="text"
           value={message}
           onChange={onMessageChange}
-          placeholder="I want to train my brain on..."
+          placeholder="Start with a detailed prompt, ask about angles, pain points, or anything else..."
           className="bg-transparent text-white placeholder-white/40 flex-grow outline-none mx-3 text-sm"
           disabled={isLoading}
         />
