@@ -446,12 +446,6 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
           </div>
         </div>
       )}
-      <ChatInput
-        message={message}
-        isLoading={isLoading}
-        onMessageChange={(e) => setMessage(e.target.value)}
-        onSubmit={handleSubmit}
-      />
 
       <div className="px-6 pb-4">
         <div
