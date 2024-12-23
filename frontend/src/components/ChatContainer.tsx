@@ -401,6 +401,12 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
       setTokenCost(prevTokens => prevTokens + totalTokens);
       setFiles(prevFiles => [...prevFiles, ...selectedFiles]);
+      // Auto scroll after video upload
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+      }, 100);
     }
   };
 
