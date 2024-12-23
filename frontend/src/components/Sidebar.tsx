@@ -220,7 +220,7 @@ export function Sidebar({
       <div className="plan-selection-content bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
         <button
           onClick={() => setShowPlanModal(false)}
-          className="absolute -top-1.5 -left-1.5 w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors z-10"
+          className="absolute top-3 left-3 w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors z-10"
         />
         <h2 className="text-2xl font-bold mb-6 text-center">Choose Your Plan</h2>
         <div className="plans-container grid grid-cols-1 gap-6">
