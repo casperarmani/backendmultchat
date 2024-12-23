@@ -308,6 +308,10 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     e.stopPropagation();
   };
 
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+  };
+
   const [tokenCost, setTokenCost] = useState<number>(0);
   const [currentTokens, setCurrentTokens] = useState<number>(0);
 
