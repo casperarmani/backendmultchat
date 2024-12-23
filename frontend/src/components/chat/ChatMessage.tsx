@@ -12,7 +12,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
   return (
     <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
       <div className={`flex items-start max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
-        <Avatar className="w-12 h-12 bg-white/10">
+        <Avatar className="w-12 h-12 bg-slate-800">
           <AvatarFallback className="text-white/80">
             {message.type === 'user' ? 'ME' : message.type === 'bot' ? 'AI' : '!'}
           </AvatarFallback>
