@@ -82,7 +82,7 @@ const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData
                   <div className="mt-2 font-medium text-white/80">
                     File: {analysis.upload_file_name}
                   </div>
-                  <div className="mt-1 text-sm text-white/70 prose prose-invert">
+                  <div className="mt-1 text-sm text-white/70 prose prose-invert prose-headings:text-base">
                     <ReactMarkdown>{analysis.analysis}</ReactMarkdown>
                   </div>
                 </div>
