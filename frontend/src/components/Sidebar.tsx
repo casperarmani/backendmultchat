@@ -222,22 +222,20 @@ export function Sidebar({
   
         <div className="plans-container grid grid-cols-1 gap-6">
           {/* Pro Plan */}
-          <div className="plan-card border rounded-lg p-4">
+          <div className="plan-card border rounded-lg p-4 flex flex-col h-full">
             <h3 className="text-lg font-semibold mb-2">Pro Plan</h3>
             <div className="price text-xl font-bold text-blue-500 mb-4">$99/month</div>
-            <ul className="text-sm text-gray-600 list-disc ml-4 space-y-2">
+            <ul className="text-sm text-gray-600 list-disc ml-4 space-y-2 flex-grow">
               <li>500 Tokens per month</li>
               <li>Priority support</li>
               <li>Advanced analytics</li>
             </ul>
             <button
               onClick={() => planInfo !== "Pro" && planInfo !== "Agency" && handlePlanSelection("Pro")}
-              className={`mt-4 w-full px-4 py-2 rounded-lg ${
-                planInfo === "Pro" 
+              className={`w-full px-4 py-2 rounded-lg ${
+                planInfo === "Pro" || planInfo === "Agency"
                   ? "bg-gray-300 cursor-not-allowed"
-                  : planInfo === "Agency"
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
+                  : "bg-black hover:bg-gray-800 text-white"
               }`}
               disabled={planInfo === "Pro" || planInfo === "Agency"}
             >
@@ -257,10 +255,10 @@ export function Sidebar({
             </ul>
             <button
               onClick={() => planInfo !== "Agency" && handlePlanSelection("Agency")}
-              className={`mt-4 w-full px-4 py-2 rounded-lg ${
+              className={`w-full px-4 py-2 rounded-lg ${
                 planInfo === "Agency"
                   ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-blue-500 hover:bg-blue-600 text-white"
+                  : "bg-black hover:bg-gray-800 text-white"
               }`}
               disabled={planInfo === "Agency"}
             >
