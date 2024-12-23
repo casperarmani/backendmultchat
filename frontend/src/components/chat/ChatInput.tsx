@@ -28,9 +28,15 @@ export function ChatInput({
         />
         <button 
           type="submit" 
-          className={`text-white/40 transition-colors p-1 ${!message.trim() ? 'cursor-not-allowed opacity-50' : 'hover:text-white/80'}`}
+          className={`text-white/40 transition-colors p-1 relative group ${!message.trim() ? 'cursor-not-allowed opacity-50' : 'hover:text-white/80'}`}
           disabled={isLoading || !message.trim()}
+          title={!message.trim() ? "Please include a message" : ""}
         >
+          {!message.trim() && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs bg-white/10 backdrop-blur-lg rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+              Please include a message
+            </div>
+          )}
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
