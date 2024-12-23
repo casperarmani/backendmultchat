@@ -246,10 +246,10 @@ export function Sidebar({
             </ul>
             <button
               onClick={() => planInfo !== "Pro" && planInfo !== "Agency" && handlePlanSelection("Pro")}
-              className={`w-full px-4 py-2 rounded-lg ${
+              className={`w-full px-4 py-2 rounded-lg bg-black text-white ${
                 planInfo === "Pro" || planInfo === "Agency"
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-black hover:bg-gray-800 text-white"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-800"
               }`}
               disabled={planInfo === "Pro" || planInfo === "Agency"}
             >
@@ -269,10 +269,10 @@ export function Sidebar({
             </ul>
             <button
               onClick={() => planInfo !== "Agency" && handlePlanSelection("Agency")}
-              className={`w-full px-4 py-2 rounded-lg ${
+              className={`w-full px-4 py-2 rounded-lg bg-black text-white ${
                 planInfo === "Agency"
-                  ? "bg-gray-300 cursor-not-allowed"
-                  : "bg-black hover:bg-gray-800 text-white"
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-800"
               }`}
               disabled={planInfo === "Agency"}
             >
