@@ -216,7 +216,14 @@ export function Sidebar({
   };
 
   const renderPlanModal = () => (
-    <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
+    <div 
+      className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setShowPlanModal(false);
+        }
+      }}
+    >
       <div className="plan-selection-content bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
         <div className="absolute top-3 left-3 flex gap-2 z-10">
             <button
