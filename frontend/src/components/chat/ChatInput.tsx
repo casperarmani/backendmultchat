@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useRef, useEffect } from 'react';
 import { Send, Search, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
@@ -14,10 +15,27 @@ export function ChatInput({
   onMessageChange,
   onSubmit
 }: ChatInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isLoading && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isLoading]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    onSubmit(e);
+    // Focus after a short delay to ensure the form submission is complete
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="p-6 border-t border-white/10">
+    <form onSubmit={handleSubmit} className="p-6 border-t border-white/10">
       <div className="flex items-center bg-white/5 backdrop-blur-lg rounded-2xl px-4 py-3">
         <input
+          ref={inputRef}
           type="text"
           value={message}
           onChange={onMessageChange}
