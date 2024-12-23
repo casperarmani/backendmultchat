@@ -397,8 +397,26 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
             <ChatMessage key={index} message={msg} />
           ))}
           {isLoading && <LoadingMessage />}
+          {tokenCost > 0 && (
+            <div className={`p-4 rounded-md ${tokenCost > (currentTokens || 0) ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'}`}>
+              Token cost: {tokenCost} tokens
+              {tokenCost > (currentTokens || 0) && (
+                <p className="text-sm mt-1">
+                  Insufficient tokens. Please remove some videos or get more tokens.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </ScrollArea>
+
+      <ChatInput
+        message={message}
+        isLoading={isLoading}
+        onMessageChange={handleMessageChange}
+        onSubmit={handleSubmit}
+        disabled={tokenCost > (currentTokens || 0)}
+      />
 
       {uploadProgress > 0 && isLoading && files.length > 0 && (
         <div className="px-6 py-2">
