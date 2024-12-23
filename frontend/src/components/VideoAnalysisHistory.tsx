@@ -65,7 +65,7 @@ const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData
   
 
   return (
-    <Card className="h-[96vh] w-[400px] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
+    <Card className="h-[96vh] w-[400px] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10 relative z-10">
       <CardHeader>
         <CardTitle>Video Analysis History</CardTitle>
       </CardHeader>
