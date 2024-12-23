@@ -267,14 +267,12 @@ export function Sidebar({
           </div>
         </div>
   
-        {isCustomer && (
+        <div className="absolute top-4 left-4">
           <button
             onClick={() => setShowPlanModal(false)}
-            className="close-modal mt-6 w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-          >
-            Close
-          </button>
-        )}
+            className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
+          />
+        </div>
       </div>
     </div>
   );
