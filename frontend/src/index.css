@@ -77,7 +77,7 @@
 .plan-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-    border-color: #3498db;
+    border-color: #1960c1;
 }
 
 .plan-card h3 {
