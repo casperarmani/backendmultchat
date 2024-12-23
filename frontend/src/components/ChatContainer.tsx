@@ -23,6 +23,7 @@ interface ChatContainerProps {
 }
 
 function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatContainerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState<string>('');
   const [chatMessages, setChatMessages] = useState<Message[]>(initialMessages);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -298,7 +299,9 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.currentTarget === dropZoneRef.current) {
+    const container = containerRef.current;
+    const relatedTarget = e.relatedTarget as Node;
+    if (container && !container.contains(relatedTarget)) {
       setIsDragging(false);
     }
   };
@@ -424,7 +427,16 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
   };
 
   return (
-    <div className="flex flex-col h-[96vh] rounded-3xl bg-black/10 backdrop-blur-xl border border-white/10">
+    <div 
+      ref={containerRef}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex flex-col h-[96vh] rounded-3xl bg-black/10 backdrop-blur-xl border ${
+        isDragging ? 'border-white/40 bg-white/5' : 'border-white/10'
+      } transition-all duration-200`}
+    >
       <ChatHeader />
       {chatMessages.length === 0 && <ChatWelcome isVisible={showWelcome} />}
 
