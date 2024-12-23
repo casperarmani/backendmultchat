@@ -5,7 +5,7 @@ import { Send, Search, Loader2 } from 'lucide-react';
 interface ChatInputProps {
   message: string;
   isLoading: boolean;
-  disabled?: boolean;
+  tooltip?: string;
   onMessageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -48,8 +48,8 @@ export function ChatInput({
         <button 
           type="submit" 
           className={`text-white/40 transition-colors p-1 relative group ${!message.trim() ? 'cursor-not-allowed opacity-50' : 'hover:text-white/80'}`}
-          disabled={isLoading || !message.trim() || disabled}
-          title={!message.trim() ? "Please include a message" : ""}
+          disabled={isLoading || !message.trim()}
+          title={tooltip || (!message.trim() ? "Please include a message" : "")}
         >
           {!message.trim() && (
             <div className="fixed bottom-[80px] left-1/2 transform -translate-x-1/2 px-3 py-2 text-sm bg-black/95 backdrop-blur-xl rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity text-white shadow-lg z-[999999]">

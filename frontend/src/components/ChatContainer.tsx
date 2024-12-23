@@ -433,7 +433,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         isLoading={isLoading}
         onMessageChange={handleMessageChange}
         onSubmit={handleSubmit}
-        disabled={tokenCost > (currentTokens || 0)}
+        tooltip={tokenCost > (currentTokens || 0) ? "Video lengths exceed token balance" : undefined}
       />
 
       {uploadProgress > 0 && isLoading && files.length > 0 && (
