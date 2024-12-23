@@ -270,7 +270,7 @@ export function Sidebar({
         <div className="relative">
           <button
             onClick={() => setShowPlanModal(false)}
-            className="absolute top-2 right-2 w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
+            className="absolute top-2 left-2 w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
           />
         </div>
       </div>
