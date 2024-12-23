@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
 import { VideoHistory } from '@/types';
+import ReactMarkdown from 'react-markdown';
 
 type VideoAnalysisHistoryProps = {
   historyData: VideoHistory[];
@@ -81,7 +82,9 @@ const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData
                   <div className="mt-2 font-medium text-white/80">
                     File: {analysis.upload_file_name}
                   </div>
-                  <div className="mt-1 text-sm text-white/70">{analysis.analysis}</div>
+                  <div className="mt-1 text-sm text-white/70 prose prose-invert">
+                    <ReactMarkdown>{analysis.analysis}</ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </div>
