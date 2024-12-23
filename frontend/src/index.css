@@ -88,7 +88,7 @@
 
 .plan-card .price {
     font-size: 2rem;
-    color: #3498db;
+    color: #1960c1; /*Darker Blue*/
     margin-bottom: 1.5rem;
     font-weight: bold;
 }
@@ -267,6 +267,13 @@
   border-radius: 0.5rem;
   padding: 1.5rem;
   text-align: center;
+}
+
+.plan-card .price {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1960c1; /*Darker Blue*/
+  margin-bottom: 1rem;
 }
 
 .select-plan-btn {
