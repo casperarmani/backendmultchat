@@ -13,6 +13,7 @@ interface ChatInputProps {
 export function ChatInput({
   message,
   isLoading,
+  tooltip,
   onMessageChange,
   onSubmit
 }: ChatInputProps) {
