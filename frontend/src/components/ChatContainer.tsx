@@ -183,7 +183,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!message.trim() && files.length === 0) || isLoading) return;
+    if ((!message.trim() && files.length === 0) || isLoading || (tokenCost > (currentTokens || 0))) return;
 
     if (chatMessages.length === 0) {
       setShowWelcome(false);
