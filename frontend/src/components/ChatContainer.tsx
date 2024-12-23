@@ -372,6 +372,12 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     const updatedFiles = files.filter((_, i) => i !== index);
     setFiles(updatedFiles);
 
+    // Reset file input
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+
     // Recalculate tokens for remaining files
     let totalTokens = 0;
     for (const file of updatedFiles) {
