@@ -70,9 +70,9 @@ const VideoAnalysisHistory: React.FC<VideoAnalysisHistoryProps> = ({ historyData
         <CardTitle>Video Analysis History</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[calc(96vh-80px)] w-full rounded-md pr-4">
+        <ScrollArea className="h-[calc(96vh-80px)] w-full rounded-md">
           {videoHistory.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-4 pr-4">
               {videoHistory.map((analysis, index) => (
                 <div key={index} className="rounded-2xl bg-black/20 backdrop-blur-lg p-4">
                   <div className="text-xs text-white/60">
