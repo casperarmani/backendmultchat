@@ -319,7 +319,7 @@ async def login_post(
 
         user = await get_user_by_email(email)
         if not user:
-            user = await create_user(email)
+            user = await create_user(email, password)
 
         session_id = secrets.token_urlsafe(32)
         session_data = {
