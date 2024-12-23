@@ -365,6 +365,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       }
       setTokenCost(totalTokens);
       setFiles(prevFiles => [...prevFiles, ...droppedFiles]);
+      
+      // Auto scroll after drag and drop
+      setTimeout(() => {
+        if (scrollAreaRef.current) {
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+      }, 100);
     }
   };
 
