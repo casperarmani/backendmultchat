@@ -231,10 +231,17 @@ export function Sidebar({
               <li>Advanced analytics</li>
             </ul>
             <button
-              onClick={() => handlePlanSelection("Pro")}
-              className="mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              onClick={() => planInfo !== "Pro" && planInfo !== "Agency" && handlePlanSelection("Pro")}
+              className={`mt-4 w-full px-4 py-2 rounded-lg ${
+                planInfo === "Pro" 
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : planInfo === "Agency"
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+              disabled={planInfo === "Pro" || planInfo === "Agency"}
             >
-              Select Pro Plan
+              {planInfo === "Pro" ? "Current Plan" : "Select Pro Plan"}
             </button>
           </div>
   
@@ -249,10 +256,15 @@ export function Sidebar({
               <li>API access</li>
             </ul>
             <button
-              onClick={() => handlePlanSelection("Agency")}
-              className="mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              onClick={() => planInfo !== "Agency" && handlePlanSelection("Agency")}
+              className={`mt-4 w-full px-4 py-2 rounded-lg ${
+                planInfo === "Agency"
+                  ? "bg-gray-300 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+              disabled={planInfo === "Agency"}
             >
-              Select Agency Plan
+              {planInfo === "Agency" ? "Current Plan" : "Select Agency Plan"}
             </button>
           </div>
         </div>
