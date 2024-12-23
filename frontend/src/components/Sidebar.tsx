@@ -218,10 +218,14 @@ export function Sidebar({
   const renderPlanModal = () => (
     <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
       <div className="plan-selection-content bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
-        <button
-          onClick={() => setShowPlanModal(false)}
-          className="absolute top-3 left-3 w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors z-10"
-        />
+        <div className="absolute top-3 left-3 flex gap-2 z-10">
+            <button
+              onClick={() => setShowPlanModal(false)}
+              className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors"
+            />
+            <div className="w-3 h-3 rounded-full bg-yellow-400"/>
+            <div className="w-3 h-3 rounded-full bg-green-500"/>
+          </div>
         <h2 className="text-2xl font-bold mb-6 text-center">Choose Your Plan</h2>
         <div className="plans-container grid grid-cols-1 gap-6">
           {/* Pro Plan */}
