@@ -17,7 +17,6 @@ export function ChatInput({
   return (
     <form onSubmit={onSubmit} className="p-6 border-t border-white/10">
       <div className="flex items-center bg-white/5 backdrop-blur-lg rounded-2xl px-4 py-3">
-        <Search className="text-white/40 w-5 h-5" />
         <input
           type="text"
           value={message}
