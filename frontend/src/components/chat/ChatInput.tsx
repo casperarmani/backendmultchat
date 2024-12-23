@@ -48,7 +48,7 @@ export function ChatInput({
         />
         <button 
           type="submit" 
-          className={`text-white/40 transition-colors p-1 relative group ${!message.trim() ? 'cursor-not-allowed opacity-50' : 'hover:text-white/80'}`}
+          className={`text-white/40 transition-colors p-1 relative group ${!message.trim() || tooltip ? 'cursor-not-allowed opacity-50' : 'hover:text-white/80'}`}
           disabled={isLoading || !message.trim()}
           title={tooltip || (!message.trim() ? "Please include a message" : "")}
         >
