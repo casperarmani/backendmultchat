@@ -37,13 +37,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.ok && data.authenticated && data.user) {
         setUser(data.user);
-        // Start periodic checks 5 minutes before expiry
-        setTimeout(checkAuthStatus, (3600 - 300) * 1000);
+        // Check auth status every 5 minutes
+        setTimeout(checkAuthStatus, 300000);
       } else if (response.status === 401 || data.code === 'PGRST301') {
-        // Token expired - handle gracefully
-        setUser(null);
-        await logout();
-        window.location.href = '/login?message=Your session has expired. Please log in again.';
+        try {
+          // Try to refresh the session
+          const refreshResponse = await fetch('/refresh_session', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          
+          if (refreshResponse.ok) {
+            // Retry auth check after refresh
+            return checkAuthStatus();
+          } else {
+            // If refresh fails, logout
+            setUser(null);
+            await logout();
+            window.location.href = '/login?message=Your session has expired. Please log in again.';
+          }
+        } catch (error) {
+          setUser(null);
+          await logout();
+          window.location.href = '/login?message=Your session has expired. Please log in again.';
+        }
       } else {
         setUser(null);
       }
