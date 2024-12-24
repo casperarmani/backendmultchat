@@ -342,7 +342,7 @@
     background-position: 0% 50%;
   }
   100% {
-    background-position: 200% 50%;
+    background-position: 400% 50%;
   }
 }
 
@@ -361,25 +361,26 @@
   padding: 2px; /* This creates the border width */
   background: linear-gradient(
     45deg,
-    #ff0000,
-    #ff3800,
-    #ff7300,
-    #ffab00,
-    #fffb00,
-    #9fff00,
-    #48ff00,
-    #00ffd5,
-    #00b4ff,
-    #002bff,
-    #5300ff,
-    #7a00ff,
-    #c800ff,
-    #ff00c8,
-    #ff0062,
-    #ff0000
+    #ff0000 0%,
+    #ff3800 6.25%,
+    #ff7300 12.5%,
+    #ffab00 18.75%,
+    #fffb00 25%,
+    #9fff00 31.25%,
+    #48ff00 37.5%,
+    #00ffd5 43.75%,
+    #00b4ff 50%,
+    #002bff 56.25%,
+    #5300ff 62.5%,
+    #7a00ff 68.75%,
+    #c800ff 75%,
+    #ff00c8 81.25%,
+    #ff0062 87.5%,
+    #ff0000 93.75%,
+    #ff0000 100%
   );
   background-size: 400% 100%;
-  animation: border-rainbow 8s linear infinite;
+  animation: border-rainbow 12s linear infinite;
   border-radius: 24px;
   -webkit-mask: 
     linear-gradient(#fff 0 0) content-box, 
