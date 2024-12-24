@@ -99,7 +99,10 @@ class EndpointFilter(logging.Filter):
              "order=TIMESTAMP.desc" in message) or
             ("GET /video_analysis_history" in message) or
             ("HTTP Request: GET" in message and "video_analysis_output" in message) or
-            ("GET /user/tokens" in message)
+            ("GET /user/tokens" in message) or
+            ("GET /subscriptions/current" in message) or
+            ("GET /subscriptions/current-status" in message) or
+            ("GET /api/config" in message)
         )
 
 # Apply custom formatting to logger
