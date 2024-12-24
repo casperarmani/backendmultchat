@@ -438,8 +438,8 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       } transition-all duration-200`}
     >
       <ChatHeader />
-      <div className={`relative ${showWelcome && chatMessages.length === 0 ? 'h-[200px]' : 'h-0'} transition-all duration-500`}>
-        <ChatWelcome isVisible={showWelcome && chatMessages.length === 0 && (!chatId || document.title === "New Chat")} />
+      <div className={`relative ${showWelcome && chatMessages.length === 0 && document.title === "New Chat" ? 'h-[200px]' : 'h-0'} transition-all duration-500`}>
+        <ChatWelcome isVisible={showWelcome && chatMessages.length === 0 && document.title === "New Chat"} />
       </div>
       <ScrollArea className="flex-grow px-6" ref={scrollAreaRef}>
         <div className="space-y-6">
