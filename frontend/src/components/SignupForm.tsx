@@ -46,10 +46,33 @@ const SignupForm: React.FC = () => {
     try {
       const result = await signup(email, password);
       if (result.success) {
-        // Get the redirect path from location state, default to '/app'
-        const { state } = location;
-        const from = state?.from || '/app';
-        navigate(from, { replace: true });
+        try {
+          // Create initial conversation
+          const response = await fetch('/conversations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              'title': 'Welcome Conversation'
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to create initial conversation');
+          }
+          
+          // Get the redirect path from location state, default to '/app'
+          const { state } = location;
+          const from = state?.from || '/app';
+          navigate(from, { replace: true });
+        } catch (error) {
+          console.error('Error creating initial conversation:', error);
+          // Continue with navigation even if conversation creation fails
+          const { state } = location;
+          const from = state?.from || '/app';
+          navigate(from, { replace: true });
+        }
       } else {
         setError(result.message || 'Invalid email or password');
       }
