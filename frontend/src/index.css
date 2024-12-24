@@ -362,17 +362,24 @@
   background: linear-gradient(
     45deg,
     #ff0000,
+    #ff3800,
     #ff7300,
+    #ffab00,
     #fffb00,
+    #9fff00,
     #48ff00,
     #00ffd5,
+    #00b4ff,
     #002bff,
+    #5300ff,
     #7a00ff,
+    #c800ff,
     #ff00c8,
+    #ff0062,
     #ff0000
   );
-  background-size: 200% 100%;
-  animation: border-rainbow 2s linear infinite;
+  background-size: 400% 100%;
+  animation: border-rainbow 8s linear infinite;
   border-radius: 24px;
   -webkit-mask: 
     linear-gradient(#fff 0 0) content-box, 
