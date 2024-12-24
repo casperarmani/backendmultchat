@@ -1,12 +1,12 @@
 
-@keyframes fadeIn {
-  from {
+@keyframes fadeInMessage {
+  0% {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px) translateZ(0);
   }
-  to {
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateZ(0);
   }
 }
 

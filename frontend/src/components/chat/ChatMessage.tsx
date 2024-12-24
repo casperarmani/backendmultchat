@@ -16,7 +16,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
     <div 
       className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
       style={{
-        animation: 'fadeIn 0.2s ease-out forwards',
+        animation: 'fadeInMessage 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        transform: 'translateZ(0)',
+        willChange: 'transform, opacity',
         opacity: 0
       }}
     >
