@@ -54,7 +54,7 @@ const SignupForm: React.FC = () => {
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
-              'title': 'Welcome Conversation'
+              'title': 'Welcome!'
             })
           });
           
