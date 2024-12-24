@@ -212,7 +212,8 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     const userMessage = { type: 'user' as MessageType, content: message };
     setChatMessages(prev => [...prev, userMessage]);
     scrollToBottom();
-
+    setMessage(''); // Clear input immediately
+    
     try {
       const formData = new FormData();
       const messageContent = message.trim();
@@ -273,8 +274,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
         }
       }
 
-      // Clear message and files immediately after successful send
-      setMessage('');
+      // Clear files after successful send
       setFiles([]);
       if (progressRef.current) {
         clearInterval(progressRef.current);
