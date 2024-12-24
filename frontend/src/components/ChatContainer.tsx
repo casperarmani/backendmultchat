@@ -459,15 +459,13 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
             </div>
           ))}
           {isLoading && <LoadingMessage />}
-          {tokenCost > 0 && (
-            {tokenCost > (currentTokens || 0) && (
-  <div className="p-4 rounded-md bg-red-500/10 text-red-500">
-    Token cost: {tokenCost} tokens
-    <p className="text-sm mt-1">
-      Insufficient tokens. Please remove some videos or get more tokens.
-    </p>
-  </div>
-)}
+          {tokenCost > 0 && tokenCost > (currentTokens || 0) && (
+            <div className="p-4 rounded-md bg-red-500/10 text-red-500">
+              Token cost: {tokenCost} tokens
+              <p className="text-sm mt-1">
+                Insufficient tokens. Please remove some videos or get more tokens.
+              </p>
+            </div>
           )}
         </div>
       </ScrollArea>
