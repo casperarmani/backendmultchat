@@ -371,8 +371,8 @@
     #ff00c8,
     #ff0000
   );
-  background-size: 300% 300%;
-  animation: border-rainbow 2s ease infinite;
+  background-size: 200% 200%;
+  animation: border-rainbow 0.8s linear infinite;
   border-radius: 24px;
   -webkit-mask: 
     linear-gradient(#fff 0 0) content-box, 
