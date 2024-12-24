@@ -18,6 +18,20 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  scroll-behavior: smooth;
+}
+
+.will-change-scroll {
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
+}
+
+.transform-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 .prose-invert {
   @apply prose-headings:text-white/90 
     prose-h1:text-lg

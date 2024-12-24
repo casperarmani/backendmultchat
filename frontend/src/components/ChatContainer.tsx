@@ -441,10 +441,12 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       <div className={`relative ${showWelcome && chatMessages.length === 0 && (!chatId || document.querySelector(`[data-chat-id="${chatId}"]`)?.textContent?.trim() === "New Chat") ? 'h-[200px]' : 'h-0'} transition-all duration-500`}>
         <ChatWelcome isVisible={showWelcome && chatMessages.length === 0 && (!chatId || document.querySelector(`[data-chat-id="${chatId}"]`)?.textContent?.trim() === "New Chat")} />
       </div>
-      <ScrollArea className="flex-grow px-6" ref={scrollAreaRef}>
-        <div className="space-y-6">
+      <ScrollArea className="flex-grow px-6 will-change-scroll" ref={scrollAreaRef}>
+        <div className="space-y-6 transform-gpu">
           {chatMessages.map((msg, index) => (
-            <ChatMessage key={index} message={msg} />
+            <div key={index} className="transform-gpu">
+              <ChatMessage message={msg} />
+            </div>
           ))}
           {isLoading && <LoadingMessage />}
           {tokenCost > 0 && (
