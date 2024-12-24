@@ -57,7 +57,7 @@ const LoginForm: React.FC = () => {
   const message = params.get('message');
 
   return (
-    <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       {message && (
         <div className="mb-4 p-4 text-sm text-blue-800 rounded-lg bg-blue-50">
           {message}
