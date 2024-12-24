@@ -102,7 +102,8 @@ class EndpointFilter(logging.Filter):
             ("GET /user/tokens" in message) or
             ("GET /subscriptions/current" in message) or
             ("GET /subscriptions/current-status" in message) or
-            ("GET /api/config" in message)
+            ("GET /api/config" in message) or
+            ("HTTP Request: GET" in message and "user_tokens?select=" in message)
         )
 
 # Apply custom formatting to logger
