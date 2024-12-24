@@ -19,10 +19,10 @@ export function ChatHeader() {
         <div className="w-3 h-3 rounded-full bg-yellow-500" />
         <div className="w-3 h-3 rounded-full bg-green-500" />
       </div>
-      <div className="flex space-x-8 text-white/60 text-sm font-light">
-        <span className="text-white">1. Data Pipeline</span>
-        <span>2. Collect Data</span>
-        <span>3. Train Model</span>
+      <div className="flex space-x-8 text-white/60 text-sm font-light transition-opacity duration-500">
+        <span className="text-white transition-opacity duration-500">1. Data Pipeline</span>
+        <span className="transition-opacity duration-500">2. Collect Data</span>
+        <span className="transition-opacity duration-500">3. Train Model</span>
       </div>
     </div>
   );
