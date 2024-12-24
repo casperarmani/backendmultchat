@@ -435,7 +435,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex flex-col h-[96vh] rounded-3xl bg-black/10 backdrop-blur-xl border ${
+      className={`chat-container flex flex-col h-[96vh] rounded-3xl bg-black/10 backdrop-blur-xl border ${
         isDragging ? 'border-white/40 bg-white/5' : 'border-white/10'
       } transition-all duration-200`}
     >
