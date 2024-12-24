@@ -92,6 +92,10 @@ class EndpointFilter(logging.Filter):
         if "Returning cached" in message:
             return False
             
+        # Allow Stripe webhook and checkout logs to pass through
+        if "Webhook" in message or "checkout.session.completed" in message or "customer.subscription" in message:
+            return True
+            
         return not (
             ("GET /conversations/" in message and "/messages" in message) or
             ("HTTP Request: GET" in message and 
