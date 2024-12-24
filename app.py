@@ -98,7 +98,8 @@ class EndpointFilter(logging.Filter):
              "user_chat_history" in message and 
              "order=TIMESTAMP.desc" in message) or
             ("GET /video_analysis_history" in message) or
-            ("HTTP Request: GET" in message and "video_analysis_output" in message)
+            ("HTTP Request: GET" in message and "video_analysis_output" in message) or
+            ("GET /user/tokens" in message)
         )
 
 # Apply custom formatting to logger
