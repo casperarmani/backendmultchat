@@ -186,8 +186,8 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
     e.preventDefault();
     if ((!message.trim() && files.length === 0) || isLoading || (tokenCost > (currentTokens || 0))) return;
 
-    if (chatMessages.length === 0) {
-      setShowWelcome(false);
+    if (showWelcome) {
+      setTimeout(() => setShowWelcome(false), 500);
     }
 
     // Set loading state and add user message immediately
@@ -438,8 +438,8 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       } transition-all duration-200`}
     >
       <ChatHeader />
-      {chatMessages.length === 0 && (
-        <ChatWelcome isVisible={chatMessages.length === 0} />
+      {(chatMessages.length === 0 || showWelcome) && (
+        <ChatWelcome isVisible={showWelcome && chatMessages.length === 0} />
       )}
 
       <ScrollArea className="flex-grow px-6" ref={scrollAreaRef}>
