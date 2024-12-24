@@ -438,7 +438,7 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       } transition-all duration-200`}
     >
       <ChatHeader />
-      <div className="h-[200px] relative">
+      <div className={`relative ${showWelcome && chatMessages.length === 0 ? 'h-[200px]' : 'h-0'} transition-all duration-500`}>
         <ChatWelcome isVisible={showWelcome && chatMessages.length === 0} />
       </div>
       <ScrollArea className="flex-grow px-6" ref={scrollAreaRef}>
