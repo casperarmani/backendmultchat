@@ -51,9 +51,11 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
 
   const handleScroll = useCallback(() => {
     if (scrollAreaRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
-      const scrollPosition = scrollHeight - scrollTop - clientHeight;
-      setIsNearBottom(scrollPosition < 100);
+      requestAnimationFrame(() => {
+        const { scrollTop, scrollHeight, clientHeight } = scrollAreaRef.current;
+        const scrollPosition = scrollHeight - scrollTop - clientHeight;
+        setIsNearBottom(scrollPosition < 100);
+      });
     }
   }, []);
 
@@ -441,10 +443,18 @@ function ChatContainer({ chatId, initialMessages = [], onMessageSent }: ChatCont
       <div className={`relative ${showWelcome && chatMessages.length === 0 && (!chatId || document.querySelector(`[data-chat-id="${chatId}"]`)?.textContent?.trim() === "New Chat") ? 'h-[200px]' : 'h-0'} transition-all duration-500`}>
         <ChatWelcome isVisible={showWelcome && chatMessages.length === 0 && (!chatId || document.querySelector(`[data-chat-id="${chatId}"]`)?.textContent?.trim() === "New Chat")} />
       </div>
-      <ScrollArea className="flex-grow px-6 will-change-scroll" ref={scrollAreaRef}>
+      <ScrollArea 
+        className="flex-grow px-6 will-change-scroll overscroll-none" 
+        ref={scrollAreaRef}
+        style={{ scrollBehavior: 'auto' }}
+      >
         <div className="space-y-6 transform-gpu">
           {chatMessages.map((msg, index) => (
-            <div key={index} className="transform-gpu">
+            <div 
+              key={msg.timestamp || index} 
+              className="transform-gpu content-visibility-auto"
+              style={{ contain: 'content' }}
+            >
               <ChatMessage message={msg} />
             </div>
           ))}
