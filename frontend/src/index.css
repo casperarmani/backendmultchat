@@ -359,6 +359,7 @@
   position: absolute;
   inset: 0;
   padding: 2px; /* This creates the border width */
+  pointer-events: none;
   background: linear-gradient(
     45deg,
     #B00000 0%,
