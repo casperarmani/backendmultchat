@@ -13,7 +13,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
   const { user } = useAuth();
   const userInitial = user?.email ? user.email[0].toUpperCase() : 'U';
   return (
-    <div className={`flex animate-fade-in ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div 
+      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+      style={{
+        animation: 'fadeIn 0.2s ease-out forwards',
+        opacity: 0
+      }}
+    >
       <div className={`flex items-start max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
         <Avatar className={`w-12 h-12 ${message.type === 'user' ? 'bg-slate-700/90' : 'bg-black/80'}`}>
           <AvatarFallback className={`text-white/80 ${message.type === 'user' ? 'bg-slate-700/90' : 'bg-black/80'}`}>
