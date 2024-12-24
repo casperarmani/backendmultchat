@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -12,6 +12,7 @@ const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const validateForm = (): boolean => {
     if (!email || !password) {
@@ -52,8 +53,16 @@ const LoginForm: React.FC = () => {
     }
   };
 
+  const params = new URLSearchParams(window.location.search);
+  const message = params.get('message');
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
+      {message && (
+        <div className="mb-4 p-4 text-sm text-blue-800 rounded-lg bg-blue-50">
+          {message}
+        </div>
+      )}
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Sign in to your account</CardTitle>

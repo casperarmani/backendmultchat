@@ -33,22 +33,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error('Auth status check failed');
-      }
-      
       const data = await response.json();
       
-      if (data.authenticated && data.user) {
+      if (response.ok && data.authenticated && data.user) {
         setUser(data.user);
+      } else if (response.status === 401 || data.code === 'PGRST301') {
+        // Token expired - handle gracefully
+        setUser(null);
+        await logout();
+        window.location.href = '/login?message=Your session has expired. Please log in again.';
       } else {
         setUser(null);
       }
     } catch (error) {
       console.error('Auth status check failed:', error);
       setUser(null);
-      // Optionally trigger a retry with exponential backoff
-      // if the error was due to network issues
       if (error instanceof TypeError) {
         setTimeout(checkAuthStatus, 5000);
       }
