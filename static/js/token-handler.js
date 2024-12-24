@@ -51,6 +51,7 @@ class TokenHandler {
                     this.isAuthenticated = false;
                     this.updateDisplays('Not logged in', 'Not logged in');
                     this.stopTokenUpdates();
+                    window.location.reload();
                 }
                 return null;
             }

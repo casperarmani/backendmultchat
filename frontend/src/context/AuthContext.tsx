@@ -13,6 +13,14 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
+  const handleLogout = async () => {
+    setUser(null);
+    await logout();
+    window.location.href = '/login?message=Your session has expired. Please log in again.';
+  };
+
+
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 interface AuthProviderProps {
@@ -37,30 +45,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.ok && data.authenticated && data.user) {
         setUser(data.user);
-        // Check auth status every 5 minutes
-        setTimeout(checkAuthStatus, 300000);
-      } else if (response.status === 401 || data.code === 'PGRST301') {
-        try {
-          // Try to refresh the session
-          const refreshResponse = await fetch('/refresh_session', {
-            method: 'POST',
-            credentials: 'include'
-          });
-          
-          if (refreshResponse.ok) {
-            // Retry auth check after refresh
-            return checkAuthStatus();
-          } else {
-            // If refresh fails, logout
-            setUser(null);
-            await logout();
-            window.location.href = '/login?message=Your session has expired. Please log in again.';
-          }
-        } catch (error) {
-          setUser(null);
-          await logout();
-          window.location.href = '/login?message=Your session has expired. Please log in again.';
+        // Check auth status every 3 minutes
+        setTimeout(checkAuthStatus, 180000);
+        
+        // Set up refresh before expiry
+        if (data.sessionExpiresIn) {
+          const refreshTimeout = Math.max((data.sessionExpiresIn - 60) * 1000, 0);
+          setTimeout(async () => {
+            const refreshResponse = await fetch('/refresh_session', {
+              method: 'POST',
+              credentials: 'include'
+            });
+            if (refreshResponse.ok) {
+              checkAuthStatus();
+            } else {
+              handleLogout();
+            }
+          }, refreshTimeout);
         }
+      } else if (response.status === 401 || data.code === 'PGRST301') {
+        await handleLogout();
       } else {
         setUser(null);
       }
