@@ -376,7 +376,7 @@ export function Sidebar({
                           autoFocus
                         />
                       ) : (
-                        <span className="ml-2 truncate max-w-[150px]">{chat.title}</span>
+                        <span className="ml-2 truncate max-w-[150px]" data-chat-id={chat.id}>{chat.title}</span>
                       )
                     )}
                   </div>
